@@ -1,4 +1,4 @@
-# service-name
+# service-kml
 
 | Branch | Status |
 |--------|-----------|
@@ -10,6 +10,9 @@
 - [Table of content](#table-of-content)
 - [Description](#description)
   - [Staging Environments](#staging-environments)
+  - [POST](#post)
+  - [GET](#get)
+  - [PUT](#put)
 - [Versioning](#versioning)
 - [Local Development](#local-development)
   - [Make Dependencies](#make-dependencies)
@@ -22,16 +25,44 @@
 
 ## Description
 
-A simple description of the service should go here
+A Microservice which stores drawings that are created in the mapviewer on s3.
 A detailed descriptions of the endpoints can be found in the [OpenAPI Spec](openapi.yaml).
 
 ### Staging Environments
 
+This service has three endpoints:
+
+- POST/kml
+- GET/kml/{id}
+- PUT/kml/{id}
+
 | Environments | URL                                                                                                                   |
 | ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| DEV          | [https://service-name.bgdi-dev.swisstopo.cloud/v4/name/](https://service-name.bgdi-dev.swisstopo.cloud/v4/name/)  |
-| INT          | [https://service-name.bgdi-int.swisstopo.cloud/v4/name/](https://service-name.bgdi-int.swisstopo.cloud/v4/name/)  |
-| PROD         | [https://service-name.bgdi-prod.swisstopo.cloud/v4/name/](https://service-name.bgdi-int.swisstopo.cloud/v4/name/) |
+| DEV          | [https://service-kml.bgdi-dev.swisstopo.cloud/v4/name/](https://service-kml.bgdi-dev.swisstopo.cloud/v4/name/)  |
+| INT          | [https://service-kml.bgdi-int.swisstopo.cloud/v4/name/](https://service-kml.bgdi-int.swisstopo.cloud/v4/name/)  |
+| PROD         | [https://service-kml.bgdi-prod.swisstopo.cloud/v4/name/](https://service-kml.bgdi-int.swisstopo.cloud/v4/name/) |
+
+### POST
+
+Payload is the kml drawn in the map.
+
+| Path | Method | Content Type | Refer | Response Type|
+|------|--------|--------------|-------|--------------|
+| | POST | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
+
+### GET
+
+| Path | Method | Response Type|
+|------|--------|--------------|
+| | GET | application/json |
+
+### PUT
+
+Payload is the kml to update.
+
+| Path | Method | Content Type | Refer | Response Type|
+|------|--------|--------------|-------|--------------|
+| | POST | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
 
 ## Versioning
 
@@ -48,7 +79,7 @@ The **Make** targets assume you have **python3.7**, **pipenv**, **bash**, **curl
 ### Setting up to work
 
 First, you'll need to clone the repo
-    git clone git@github.com:geoadmin/service-name
+    git clone git@github.com:geoadmin/service-kml
 Then, you can run the setup target to ensure you have everything needed to develop, test and serve locally
     make setup
 That's it, you're ready to work.
@@ -81,7 +112,7 @@ Is the command you're looking for.
 
 ## Docker
 
-The service is encapsulated in a Docker image. Images are pushed on the public [Dockerhub](https://hub.docker.com/r/swisstopo/service-name/tags) registry. From each github PR that is merged into develop branch, one Docker image is built and pushed with the following tags:
+The service is encapsulated in a Docker image. Images are pushed on the public [Dockerhub](https://hub.docker.com/r/swisstopo/service-kml/tags) registry. From each github PR that is merged into develop branch, one Docker image is built and pushed with the following tags:
 
 - `develop.latest`
 - `CURRENT_VERSION-beta.INCREMENTAL_NUMBER`
@@ -103,7 +134,7 @@ These metadata can be seen directly on the dockerhub registry in the image layer
 ```bash
 # NOTE: jq is only used for pretty printing the json output,
 # you can install it with `apt install jq` or simply enter the command without it
-docker image inspect --format='{{json .Config.Labels}}' swisstopo/service-name:develop.latest | jq
+docker image inspect --format='{{json .Config.Labels}}' swisstopo/service-kml:develop.latest | jq
 ```
 
 You can also check these metadata on a running container as follows

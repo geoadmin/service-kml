@@ -2,7 +2,7 @@ SHELL = /bin/bash
 
 .DEFAULT_GOAL := help
 
-SERVICE_NAME := template
+SERVICE_KML := template
 
 CURRENT_DIR := $(shell pwd)
 
@@ -16,7 +16,7 @@ REQUIREMENTS_TIMESTAMP = $(TIMESTAMPS)/.requirements.timestamp
 DEV_REQUIREMENTS_TIMESTAMP = $(TIMESTAMPS)/.dev-requirements.timestamps
 
 # Docker variables
-DOCKER_IMG_LOCAL_TAG = swisstopo/$(SERVICE_NAME):local
+DOCKER_IMG_LOCAL_TAG = swisstopo/$(SERVICE_KML):local
 
 # Find all python files that are not inside a hidden directory (directory starting with .)
 PYTHON_FILES := $(shell find ./* -type f -name "*.py" -print)
@@ -154,7 +154,7 @@ dockerrun: dockerbuild
 
 .PHONY: shutdown
 shutdown:
-	HTTP_PORT=$(HTTP_PORT) SERVICE_NAME=$(SERVICE_NAME) docker-compose down
+	HTTP_PORT=$(HTTP_PORT) SERVICE_KML=$(SERVICE_KML) docker-compose down
 
 
 .PHONY: clean_venv
