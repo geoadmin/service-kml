@@ -54,7 +54,7 @@ Payload is the kml drawn in the map.
 
 | Path | Method | Response Type|
 |------|--------|--------------|
-| | GET | application/json |
+| | GET | application/vnd.google-earth.kml+xml |
 
 ### PUT
 
@@ -62,7 +62,7 @@ Payload is the kml to update.
 
 | Path | Method | Content Type | Refer | Response Type|
 |------|--------|--------------|-------|--------------|
-| | POST | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
+| | PUT | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
 
 ## Versioning
 
