@@ -2,7 +2,7 @@ SHELL = /bin/bash
 
 .DEFAULT_GOAL := help
 
-SERVICE_NAME := template
+SERVICE_NAME := service-kml
 
 CURRENT_DIR := $(shell pwd)
 
