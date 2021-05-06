@@ -229,7 +229,7 @@
                 "sha256:ffe538682dc19cc542ae7c3e504fdf54ca7f86fb8a135e59dd6bc8627eae6cce"
             ],
             "index": "pypi",
-            "version": "==7.2.0"
+            "version": ">=8.1.2"
         },
         "pyyaml": {
             "hashes": [
@@ -248,7 +248,7 @@
                 "sha256:d13155f591e6fcc1ec3b30685d50bf0711574e2c0dfffd7644babf8b5102ca1a"
             ],
             "index": "pypi",
-            "version": "==5.3.1"
+            "version": ">=5.4"
         },
         "werkzeug": {
             "hashes": [
