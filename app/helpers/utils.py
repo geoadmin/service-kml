@@ -4,8 +4,9 @@ import os
 import re
 from functools import wraps
 
-import defusedxml.ElementTree as ET
 import yaml
+
+import defusedxml.ElementTree as ET
 from defusedxml.ElementTree import ParseError
 
 from flask import abort
@@ -47,6 +48,7 @@ def init_logging():
 
 
 def prevent_erroneous_kml(kml_string):
+    # remove all attributes with on prefix and all script elements
     kml_string = re.sub(r'on\w*=(".+?"|\'.+?\')', '', kml_string, flags=re.IGNORECASE)
     kml_string = re.sub(
         r'(<|&lt;)\s*\bscript\b.*?(>|&gt;).*?(<|&lt;)/\s*\bscript\b\s*(>|&gt;)',
@@ -57,7 +59,13 @@ def prevent_erroneous_kml(kml_string):
     return kml_string
 
 
-def validate_content(content):
+def bytes_to_mb(bytes, to, b_size=1024):
+    a = {'k': 1, 'm': 2, 'g': 3, 't': 4, 'p': 5, 'e': 6}
+    r = float(bytes)
+    return bytes / (b_size**a[to])
+
+
+def validate_content_type(content):
 
     def inner_decorator(func):
 
@@ -75,9 +83,13 @@ def validate_content(content):
 def validate_kml_string(kml_string):
 
     max_file_size = 1024 * 1024 * 2
+    file_size_in_mb = bytes_to_mb(max_file_size, 'm')
+    kml_string_mb = bytes_to_mb(len(kml_string), 'm')
 
     if len(kml_string) > max_file_size:
-        error_msg = 'File size exceed %s bytes' % max_file_size
+        error_msg = 'File size exceed {} MB. The actual file size is {} MB'.format(
+            file_size_in_mb, kml_string_mb
+        )
         logger.error(error_msg)
         abort(413, error_msg)
     prevent_erroneous_kml(kml_string)
@@ -85,6 +97,6 @@ def validate_kml_string(kml_string):
         ET.fromstring(kml_string)
     except ParseError as err:
         logger.error("Invalid kml file %s", err)
-        abort(415, 'Only valid KML file are accepted')
+        abort(400, 'Invalid kml file')
 
     return kml_string

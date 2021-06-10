@@ -44,4 +44,4 @@ class PostTests(unittest.TestCase):
         response = self.app.post(
             "/kml", data=xml_file_false, content_type="application/vnd.google-earth.kml+xml"
         )
-        self.assertEqual(response.status_code, 415)
+        self.assertEqual(response.status_code, 400)

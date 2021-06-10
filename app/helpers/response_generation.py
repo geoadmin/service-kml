@@ -10,10 +10,5 @@ def make_error_msg(code, msg):
             }
         }),
         code,
-        {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methogs': 'POST',
-            'Access-Control-Allow-Headers': 'Content-Type'
-        }
     )
     return response
