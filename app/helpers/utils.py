@@ -59,10 +59,10 @@ def prevent_erroneous_kml(kml_string):
     return kml_string
 
 
-def bytes_to_mb(bytes, to, b_size=1024):
-    a = {'k': 1, 'm': 2, 'g': 3, 't': 4, 'p': 5, 'e': 6}
-    r = float(bytes)
-    return bytes / (b_size**a[to])
+def bytes_conversion(byte, too, b_size=1024):
+    choice = {'kb': 1, 'mb': 2, 'gb': 3, 'tb': 4}
+    byte_float = float(byte)
+    return byte / (b_size**choice[too.lower()])
 
 
 def validate_content_type(content):
@@ -83,12 +83,10 @@ def validate_content_type(content):
 def validate_kml_string(kml_string):
 
     max_file_size = 1024 * 1024 * 2
-    file_size_in_mb = bytes_to_mb(max_file_size, 'm')
-    kml_string_mb = bytes_to_mb(len(kml_string), 'm')
 
     if len(kml_string) > max_file_size:
         error_msg = 'File size exceed {} MB. The actual file size is {} MB'.format(
-            file_size_in_mb, kml_string_mb
+            bytes_conversion(max_file_size, 'MB'), bytes_conversion(len(kml_string), 'MB')
         )
         logger.error(error_msg)
         abort(413, error_msg)
