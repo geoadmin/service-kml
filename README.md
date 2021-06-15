@@ -19,7 +19,7 @@
   - [Setting up to work](#setting-up-to-work)
   - [Linting and formatting your work](#linting-and-formatting-your-work)
   - [Test your work](#test-your-work)
-- [Docker](#docker)
+  - [Docker helpers](#docker-helpers)
 - [Deployment](#deployment)
   - [Deployment configuration](#deployment-configuration)
 
@@ -110,6 +110,34 @@ To stop serving through containers,
 
 Is the command you're looking for.
 ### Docker helpers
+
+From each github PR that is merged into master, one Docker image is built an pushed with the following tag:
+
+- `VERSION`
+- `vX.X.X` for tags on master
+- `vX.X.X-beta.X` for tags on develop 
+
+Each image contains the following metadata:
+
+- author
+- git.branch
+- git.hash
+- git.dirty
+- version
+
+These metadata can be seen directly on the AWS ECR registry in the image layers or can be read with the following command
+
+```bash
+# NOTE: jq is only used for pretty printing the json output,
+# you can install it with `apt install jq` or simply enter the command without it
+docker image inspect --format='{{json .Config.Labels}}' swisstopo/service-kml:develop.latest | jq
+```
+
+You can also check these metadata on a running container as follows
+
+```bash
+docker ps --format="table {{.ID}}\t{{.Image}}\t{{.Labels}}"
+```
 
 To build a local docker image tagged as `service-kml:local-${USER}-${GIT_HASH_SHORT}` you can
 use
