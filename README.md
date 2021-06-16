@@ -19,7 +19,7 @@
   - [Setting up to work](#setting-up-to-work)
   - [Linting and formatting your work](#linting-and-formatting-your-work)
   - [Test your work](#test-your-work)
-- [Docker](#docker)
+  - [Docker helpers](#docker-helpers)
 - [Deployment](#deployment)
   - [Deployment configuration](#deployment-configuration)
 
@@ -109,17 +109,13 @@ To stop serving through containers,
     make shutdown
 
 Is the command you're looking for.
+### Docker helpers
 
-## Docker
-
-The service is encapsulated in a Docker image. Images are pushed on the public [Dockerhub](https://hub.docker.com/r/swisstopo/service-kml/tags) registry. From each github PR that is merged into develop branch, one Docker image is built and pushed with the following tags:
-
-- `develop.latest`
-- `CURRENT_VERSION-beta.INCREMENTAL_NUMBER`
-
-From each github PR that is merged into master, one Docker image is built an pushed with the following tag:
+From each github PR that is merged into `master` or into `develop`, one Docker image is built an pushed with the following tag:
 
 - `VERSION`
+- `vX.X.X` for tags on master
+- `vX.X.X-beta.X` for tags on develop 
 
 Each image contains the following metadata:
 
@@ -129,9 +125,13 @@ Each image contains the following metadata:
 - git.dirty
 - version
 
-These metadata can be seen directly on the dockerhub registry in the image layers or can be read with the following command
+These metadata can be read with the following command
 
 ```bash
+# NOTE: Currently we don't have permission to do docker pull on AWS ECR
+make dockerlogin
+docker pull 974517877189.dkr.ecr.eu-central-1.amazonaws.com/service-kml:develop.latest
+
 # NOTE: jq is only used for pretty printing the json output,
 # you can install it with `apt install jq` or simply enter the command without it
 docker image inspect --format='{{json .Config.Labels}}' swisstopo/service-kml:develop.latest | jq
@@ -142,6 +142,21 @@ You can also check these metadata on a running container as follows
 ```bash
 docker ps --format="table {{.ID}}\t{{.Image}}\t{{.Labels}}"
 ```
+
+To build a local docker image tagged as `service-kml:local-${USER}-${GIT_HASH_SHORT}` you can
+use
+
+```bash
+make dockerbuild
+```
+
+To push the image on the ECR repository use the following two commands
+
+```bash
+make dockerlogin
+make dockerpush
+```
+
 
 ## Deployment
 
