@@ -111,9 +111,8 @@ To stop serving through containers,
 Is the command you're looking for.
 ### Docker helpers
 
-From each github PR that is merged into `master` or into `develop`, one Docker image is built an pushed with the following tag:
+From each github PR that is merged into `master` or into `develop`, one Docker image is built and pushed on AWS ECR with the following tag:
 
-- `VERSION`
 - `vX.X.X` for tags on master
 - `vX.X.X-beta.X` for tags on develop 
 
@@ -134,7 +133,7 @@ docker pull 974517877189.dkr.ecr.eu-central-1.amazonaws.com/service-kml:develop.
 
 # NOTE: jq is only used for pretty printing the json output,
 # you can install it with `apt install jq` or simply enter the command without it
-docker image inspect --format='{{json .Config.Labels}}' swisstopo/service-kml:develop.latest | jq
+docker image inspect --format='{{json .Config.Labels}}' 974517877189.dkr.ecr.eu-central-1.amazonaws.com/service-kml:develop.latest | jq
 ```
 
 You can also check these metadata on a running container as follows
