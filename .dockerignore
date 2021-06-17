@@ -19,3 +19,5 @@ Makefile
 .venv
 lib-makefiles/*
 buildspec.yml
+minio.env
+.env.local
