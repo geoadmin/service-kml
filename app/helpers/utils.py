@@ -4,7 +4,9 @@ import os
 import re
 from functools import wraps
 
+import boto3
 import yaml
+from botocore.client import Config
 
 import defusedxml.ElementTree as ET
 from defusedxml.ElementTree import ParseError
@@ -13,8 +15,7 @@ from flask import abort
 from flask import jsonify
 from flask import make_response
 from flask import request
-import boto3
-from botocore.client import Config
+
 from app import settings
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,7 @@ ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))
 
 EXPECTED_KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
 
+
 def get_s3_client():
     '''Return a S3 client
     NOTE: Authentication is done via the following environment variables:
@@ -37,26 +39,14 @@ def get_s3_client():
     '''
     return boto3.client(
         's3',
-        endpoint_url=settings.AWS_S3_ENDPOINT_URL,
-        region_name=settings.AWS_S3_REGION_NAME,
-        config=Config(signature_version='s3')
+        endpoint_url=os.getenv('AWS_S3_ENDPOINT_URL'),
+        config=Config(signature_version='s3v4')
     )
 
-def get_s3_resource():
-    '''Returns an AWS S3 resource
-
-    The authentication with the S3 server is configured via the AWS_ACCESS_KEY_ID and
-    AWS_SECRET_ACCESS_KEY environment variables.
-
-    Returns:
-        AWS S3 resource
-    '''
-    return boto3.resource(
-        's3', endpoint_url=settings.AWS_S3_ENDPOINT_URL, config=Config(signature_version='s3v4')
-    )
 
 def get_dynamodb_connection():
     return boto3.resource('dynamodb', region_name=settings.AWS_DB_REGION_NAME)
+
 
 def make_error_msg(code, msg):
     return make_response(jsonify({'success': False, 'error': {'code': code, 'message': msg}}), code)
