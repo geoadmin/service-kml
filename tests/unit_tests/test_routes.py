@@ -3,9 +3,11 @@ import unittest
 
 import boto3
 from moto import mock_s3
+from moto import mock_dynamodb2
 
 from app import app
 from app.version import APP_VERSION
+from app.helpers.dynamodb import DynamoDBFilesHandler
 
 
 class CheckerTests(unittest.TestCase):
@@ -36,6 +38,8 @@ class TestPostEndpoint(unittest.TestCase):
 
         s3mock = mock_s3()
         s3mock.start()
+        dynamodb = mock_dynamodb2()
+        dynamodb.start()
         self.app = app.test_client()
         self.app.testing = True
         self.kml_string = """<root xmlns    = "https://www.exampel.ch/"
@@ -51,9 +55,24 @@ class TestPostEndpoint(unittest.TestCase):
         </root>"""
 
     @mock_s3
+    @mock_dynamodb2
     def test_kml_post(self):
         conn = boto3.resource('s3', region_name=os.getenv('AWS_S3_REGION_NAME'))
         conn.create_bucket(Bucket=os.getenv('AWS_S3_BUCKET_NAME'))
+        get = boto3.resource('dynamodb', region_name='us-east-1')
+        get.create_table(
+            TableName='shorturl',
+            AttributeDefinitions=[
+                {
+                    'AttributeName': 'kml_admin_id', 'AttributeType': 'S'
+                },
+            ],
+            KeySchema=[
+                {
+                    'AttributeName': 'kml_admin_id', 'KeyType': 'HASH'
+                },
+            ]
+        )
         response = self.app.post(
             "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
         )

@@ -12,6 +12,7 @@ from flask import request
 from app import app
 # from app.helpers.dynamodb import DynamoDBFilesHandler
 from app.helpers.s3 import S3FileHandling
+from app.helpers.dynamodb import DynamoDBFilesHandler
 from app.helpers.utils import validate_content_type
 from app.helpers.utils import validate_kml_string
 from app.version import APP_VERSION
@@ -36,17 +37,17 @@ def post_kml():
     timestamp = datetime.now(timezone.utc)
     executor = S3FileHandling()
     executor.upload_object_to_bucket(kml_id, kml_string, bucket_name='my_bucket')
-    # enforcer = DynamoDBFilesHandler()
-    # enforcer.save_item(kml_admin_id, kml_id, timestamp)
+    enforcer = DynamoDBFilesHandler()
+    enforcer.save_item(kml_admin_id, kml_id, timestamp)
     return make_response(
         jsonify(
             {
                 'code': 201,
                 'id': kml_admin_id,
-                "links":
+                'links':
                     {
-                        "self": f'service-url/kml/{kml_admin_id}',
-                        'kml': f"public.geo.admin.ch/{kml_id}"
+                        'self': f'service-url/kml/{kml_admin_id}',
+                        'kml': f'public.geo.admin.ch/{kml_id}'
                     }
             }
         ),

@@ -4,7 +4,6 @@ from app.helpers.utils import get_dynamodb_connection
 class DynamoDBFilesHandler:
 
     def __init__(self, table_name, bucket_name, table_region):
-        # We use instance roles
         self.dynamodb = get_dynamodb_connection()
         self.table = self.get_dynamodb_table()
         self.bucket_name = bucket_name
