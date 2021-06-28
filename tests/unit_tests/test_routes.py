@@ -1,13 +1,14 @@
-import os
 import unittest
 
 import boto3
-from moto import mock_s3
-from moto import mock_dynamodb2
 
 from app import app
+from app.settings import AWS_DB_ENDPOINT_URL
+from app.settings import AWS_DB_REGION_NAME
+from app.settings import AWS_DB_TABLE_NAME
+from app.settings import AWS_S3_BUCKET_NAME
+from app.settings import AWS_S3_REGION_NAME
 from app.version import APP_VERSION
-from app.helpers.dynamodb import DynamoDBFilesHandler
 
 
 class CheckerTests(unittest.TestCase):
@@ -26,20 +27,6 @@ class CheckerTests(unittest.TestCase):
 class TestPostEndpoint(unittest.TestCase):
 
     def setUp(self):
-
-        # set the ENV variables to unit test values:
-        os.environ['AWS_ACCESS_KEY_ID'] = 'my-key'
-        os.environ['AWS_SECRET_ACCESS_KEY'] = 'my-key'
-        os.environ['AWS_DEFAULT_ACL'] = 'public-read'
-        os.environ['AWS_S3_REGION_NAME'] = 'us-east-1'
-        del os.environ['AWS_S3_ENDPOINT_URL']
-        os.environ['AWS_S3_CUSTOM_DOMAIN'] = 'testserver'
-        os.environ['AWS_S3_BUCKET_NAME'] = 'my_bucket'
-
-        s3mock = mock_s3()
-        s3mock.start()
-        dynamodb = mock_dynamodb2()
-        dynamodb.start()
         self.app = app.test_client()
         self.app.testing = True
         self.kml_string = """<root xmlns    = "https://www.exampel.ch/"
@@ -53,26 +40,27 @@ class TestPostEndpoint(unittest.TestCase):
         <py:elem1 />
         <elem2 xmlns="" />
         </root>"""
-
-    @mock_s3
-    @mock_dynamodb2
-    def test_kml_post(self):
-        conn = boto3.resource('s3', region_name=os.getenv('AWS_S3_REGION_NAME'))
-        conn.create_bucket(Bucket=os.getenv('AWS_S3_BUCKET_NAME'))
-        get = boto3.resource('dynamodb', region_name='us-east-1')
-        get.create_table(
-            TableName='shorturl',
+        s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME)
+        location = {'LocationConstraint': AWS_S3_REGION_NAME}
+        s3bucket.create_bucket(Bucket=AWS_S3_BUCKET_NAME, CreateBucketConfiguration=location)
+        dynamodb = boto3.resource(
+            'dynamodb', region_name=AWS_DB_REGION_NAME, endpoint_url=AWS_DB_ENDPOINT_URL
+        )
+        dynamodb.create_table(
+            TableName=AWS_DB_TABLE_NAME,
             AttributeDefinitions=[
                 {
-                    'AttributeName': 'kml_admin_id', 'AttributeType': 'S'
+                    'AttributeName': 'adminId', 'AttributeType': 'S'
                 },
             ],
             KeySchema=[
                 {
-                    'AttributeName': 'kml_admin_id', 'KeyType': 'HASH'
+                    'AttributeName': 'adminId', 'KeyType': 'HASH'
                 },
             ]
         )
+
+    def test_kml_post(self):
         response = self.app.post(
             "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
         )

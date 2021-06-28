@@ -79,35 +79,56 @@ The **Make** targets assume you have **python3.7**, **pipenv**, **bash**, **curl
 ### Setting up to work
 
 First, you'll need to clone the repo
-    git clone git@github.com:geoadmin/service-kml
+```bash
+git clone git@github.com:geoadmin/service-kml
+```
+
+create and adapt your local copy of .env.default to your needs.
+Afterwards source it (otherwise default values will be used by the service) and
+let ENV_FILE point to your local env file:
+```bash
+cp .env.default .env.local
+source .env.local
+export ENV_FILE=.env.local
+```
+
 Then, you can run the setup target to ensure you have everything needed to develop, test and serve locally
-    make setup
+```bash
+make setup
+```
+
 That's it, you're ready to work.
 ### Linting and formatting your work
 In order to have a consistent code style the code should be formatted using `yapf`. Also to avoid syntax errors and non
 pythonic idioms code, the project uses the `pylint` linter. Both formatting and linter can be manually run using the
 following command:
-    make format-lint
+```bash
+make format-lint
+```
 **Formatting and linting should be at best integrated inside the IDE, for this look at
 [Integrate yapf and pylint into IDE](https://github.com/geoadmin/doc-guidelines/blob/master/PYTHON.md#yapf-and-pylint-ide-integration)**
 ### Test your work
 Testing if what you developed work is made simple. You have four targets at your disposal. **test, serve, gunicornserve, dockerrun**
-    make test
+```bash
+make test
+```
 This command run the integration and unit tests.
-    make serve
+```bash
+make serve
+```
 This will serve the application through Flask without any wsgi in front.
-
-    make gunicornserve
-
+```bash
+make gunicornserve
+```
 This will serve the application with the Gunicorn layer in front of the application
-
-    make dockerrun
-
+```bash
+make dockerrun
+```
 This will serve the application with the wsgi server, inside a container.
 To stop serving through containers,
-
-    make shutdown
-
+```bash
+make shutdown
+```
 Is the command you're looking for.
 ### Docker helpers
 

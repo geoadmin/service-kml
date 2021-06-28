@@ -16,8 +16,6 @@ from flask import jsonify
 from flask import make_response
 from flask import request
 
-from app import settings
-
 logger = logging.getLogger(__name__)
 
 ALLOWED_DOMAINS = [
@@ -31,7 +29,7 @@ ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))
 EXPECTED_KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
 
 
-def get_s3_client():
+def get_s3_client(region, endpoint_url):
     '''Return a S3 client
     NOTE: Authentication is done via the following environment variables:
         - AWS_ACCESS_KEY_ID
@@ -39,13 +37,14 @@ def get_s3_client():
     '''
     return boto3.client(
         's3',
-        endpoint_url=os.getenv('AWS_S3_ENDPOINT_URL'),
+        endpoint_url=endpoint_url,
+        region_name=region,
         config=Config(signature_version='s3v4')
     )
 
 
-def get_dynamodb_connection():
-    return boto3.resource('dynamodb', region_name=settings.AWS_DB_REGION_NAME)
+def get_dynamodb_resource(region, endpoint_url):
+    return boto3.resource('dynamodb', endpoint_url=endpoint_url, config=Config(region_name=region))
 
 
 def make_error_msg(code, msg):
@@ -53,7 +52,7 @@ def make_error_msg(code, msg):
 
 
 def get_logging_cfg():
-    cfg_file = os.getenv('LOGGING_CFG', 'logging-cfg-local.yml')
+    cfg_file = os.getenv('LOGGING_CFG', 'app/config/logging-cfg-local.yml')
 
     config = {}
     with open(cfg_file, 'rt') as fd:

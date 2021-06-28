@@ -1,16 +1,13 @@
-from app.helpers.utils import get_dynamodb_connection
+from app.helpers.utils import get_dynamodb_resource
 
 
 class DynamoDBFilesHandler:
 
-    def __init__(self, table_name, bucket_name, table_region):
-        self.dynamodb = get_dynamodb_connection()
-        self.table = self.get_dynamodb_table()
+    def __init__(self, table_name, bucket_name, endpoint_url, table_region):
+        self.dynamodb = get_dynamodb_resource(table_region, endpoint_url)
+        self.table = self.dynamodb.Table(table_name)
         self.bucket_name = bucket_name
-
-    def get_dynamodb_table(self, table_name='shorturl', region='eu-west-1'):
-        table = self.dynamodb.Table(table_name, region)
-        return table
+        self.endpoint = endpoint_url
 
     def save_item(self, kml_admin_id, file_id, timestamp):
         self.table.put_item(
