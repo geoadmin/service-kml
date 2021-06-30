@@ -60,9 +60,29 @@ class TestPostEndpoint(unittest.TestCase):
             ]
         )
 
-    def test_kml_post(self):
+    def tearDown(self):
+        s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME).Bucket(AWS_S3_BUCKET_NAME)
+        for key in s3bucket.objects.all():
+            key.delete()
+        s3bucket.delete()
+        dynamodb = boto3.resource(
+            'dynamodb', region_name=AWS_DB_REGION_NAME, endpoint_url=AWS_DB_ENDPOINT_URL
+        )
+        dynamodb.Table(AWS_DB_TABLE_NAME).delete()
+
+    def test_valid_kml_post(self):
         response = self.app.post(
             "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
         )
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.content_type, "application/json")
+
+    def test_invalid_kml_post(self):
+        response = self.app.post(
+            "/kml",
+            data=self.kml_invalid_string,
+            content_type="application/vnd.google-earth.kml+xml"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json['error']['message'], 'Invalid kml file')
         self.assertEqual(response.content_type, "application/json")
