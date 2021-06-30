@@ -19,6 +19,7 @@ from app.settings import AWS_DB_TABLE_NAME
 from app.settings import AWS_S3_BUCKET_NAME
 from app.settings import AWS_S3_ENDPOINT_URL
 from app.settings import AWS_S3_REGION_NAME
+from app.settings import SERVICE_URL
 from app.version import APP_VERSION
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ def post_kml():
                 'id': kml_admin_id,
                 'links':
                     {
-                        'self': f'service-url/kml/{kml_admin_id}',
+                        'self': f'{SERVICE_URL}/kml/{kml_admin_id}',
                         'kml': f'public.geo.admin.ch/{kml_id}'
                     }
             }
