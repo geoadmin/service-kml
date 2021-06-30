@@ -138,7 +138,7 @@ format-lint: format lint
 
 .PHONY: test
 test:
-	ENV_FILE=.env.testing $(NOSE) -c tests/unittest.cfg --verbose
+	ENV_FILE=.env.testing $(NOSE) -c tests/unittest.cfg --verbose --junit-xml-path $(TEST_REPORT_DIR)/$(TEST_REPORT_FILE) -s tests/
 
 
 # Serve targets. Using these will run the application on your local machine. You can either serve with a wsgi front (like it would be within the container), or without.
