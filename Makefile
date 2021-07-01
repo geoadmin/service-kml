@@ -226,23 +226,6 @@ serve-spec-swagger:
 		-v ${PWD}/openapi.yml:/openapi.yaml \
 		swaggerapi/swagger-ui
 
-# Clean targets
-
-.PHONY: clean_logs
-clean_logs:
-	rm -rf $(LOGS_DIR)
-
-.PHONY: clean_venv
-clean_venv:
-	pipenv --rm
-
-
-.PHONY: clean
-clean: clean_venv clean_logs
-	@# clean python cache files
-	find . -name __pycache__ -type d -print0 | xargs -I {} -0 rm -rf "{}"
-	rm -rf $(TIMESTAMPS)
-
 
 # Actual builds targets with dependencies
 

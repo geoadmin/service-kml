@@ -97,6 +97,16 @@ Then, you can run the setup target to ensure you have everything needed to devel
 make setup
 ```
 
+The other services that are used (DynamoDB local and [MinIO](https://www.min.io) as local S3 replacement) are wrapped in a docker compose.
+
+Starting DynamoDB local and MinIO is done with a simple
+
+```bash
+docker-compose up
+```
+
+in the source root folder. Make sure to run `make setup` before to ensure the necessary folders `.volumes/*` are in place. These folders are mounted in the services and allow data persistency over restarts of the containers.
+
 That's it, you're ready to work.
 ### Linting and formatting your work
 In order to have a consistent code style the code should be formatted using `yapf`. Also to avoid syntax errors and non
