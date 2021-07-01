@@ -18,4 +18,5 @@ class S3FileHandling:
         return self.s3.delete_object(Bucket=bucket_name, Key=file_name)
 
     def upload_object_to_bucket(self, file_id, data, bucket_name):
+        logger.debug("Uploading file %s to bucket %s.", file_id, bucket_name)
         return self.s3.put_object(Body=data, Bucket=bucket_name, Key=file_id)
