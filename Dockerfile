@@ -1,6 +1,5 @@
 # Buster slim python 3.7 base image.
 FROM python:3.7-slim-buster
-ARG HTTP_PORT=5000
 RUN groupadd -r geoadmin && useradd -u 1000 -r -s /bin/false -g geoadmin geoadmin
 
 
@@ -20,6 +19,7 @@ ARG GIT_BRANCH=unknown
 ARG GIT_DIRTY=""
 ARG VERSION=unknown
 ARG AUTHOR=unknown
+ARG HTTP_PORT=5000
 LABEL git.hash=$GIT_HASH
 LABEL git.branch=$GIT_BRANCH
 LABEL git.dirty="$GIT_DIRTY"

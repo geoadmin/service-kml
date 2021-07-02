@@ -132,6 +132,14 @@ make gunicornserve
 ```
 This will serve the application with the Gunicorn layer in front of the application
 ```bash
+make serve-spec-redoc
+```
+This serve the spec using Redoc on localhost:8080
+```bash
+make serve-spec-swagger 
+```
+This serve the spec using Swagger on localhost:8080/swagger
+```bash
 make dockerrun
 ```
 This will serve the application with the wsgi server, inside a container.

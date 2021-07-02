@@ -52,7 +52,7 @@ def post_kml():
     return make_response(
         jsonify(
             {
-                'code': 201,
+                'success': True,
                 'id': kml_admin_id,
                 'links':
                     {

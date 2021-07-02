@@ -4,9 +4,7 @@ import os
 import re
 from functools import wraps
 
-import boto3
 import yaml
-from botocore.client import Config
 
 import defusedxml.ElementTree as ET
 from defusedxml.ElementTree import ParseError
@@ -27,24 +25,6 @@ ALLOWED_DOMAINS = [
 ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))
 
 EXPECTED_KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
-
-
-def get_s3_client(region, endpoint_url):
-    '''Return a S3 client
-    NOTE: Authentication is done via the following environment variables:
-        - AWS_ACCESS_KEY_ID
-        - AWS_SECRET_ACCESS_KEY
-    '''
-    return boto3.client(
-        's3',
-        endpoint_url=endpoint_url,
-        region_name=region,
-        config=Config(signature_version='s3v4')
-    )
-
-
-def get_dynamodb_resource(region, endpoint_url):
-    return boto3.resource('dynamodb', endpoint_url=endpoint_url, config=Config(region_name=region))
 
 
 def make_error_msg(code, msg):

@@ -1,8 +1,24 @@
 import logging
 
-from app.helpers.utils import get_s3_client
+import boto3
+
+from botocore.client import Config
 
 logger = logging.getLogger(__name__)
+
+
+def get_s3_client(region, endpoint_url):
+    '''Return a S3 client
+    NOTE: Authentication is done via the following environment variables:
+        - AWS_ACCESS_KEY_ID
+        - AWS_SECRET_ACCESS_KEY
+    '''
+    return boto3.client(
+        's3',
+        endpoint_url=endpoint_url,
+        region_name=region,
+        config=Config(signature_version='s3v4')
+    )
 
 
 class S3FileHandling:

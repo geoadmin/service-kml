@@ -23,7 +23,7 @@ TEST_REPORT_FILE ?= nose2-junit.xml
 TIMESTAMPS = .timestamps
 VOLUMES_MINIO = .volumes/minio
 LOGS_DIR = $(PWD)/logs
-REQUIREMENTS := $(TIMESTAMPS) ${VOLUMES_MINIO} $(LOGS_DIR) $(PIP_FILE) $(PIP_FILE_LOCK)
+REQUIREMENTS := $(TIMESTAMPS) $(VOLUMES_MINIO) $(LOGS_DIR) $(PIP_FILE) $(PIP_FILE_LOCK)
 
 
 # Docker variables
@@ -72,19 +72,23 @@ help:
 	@echo "- format             Format the python source code"
 	@echo "- lint               Lint the python source code"
 	@echo "- format-lint        Format and lint the python source code"
+	@echo "- lint-spec          Lint the openapi spec"
 	@echo "- test               Run the tests"
 	@echo -e " \033[1mLOCAL SERVER TARGETS\033[0m "
 	@echo "- serve              Run the project using the flask debug server. Port can be set by Env variable HTTP_PORT (default: 5000)"
 	@echo "- gunicornserve      Run the project using the gunicorn WSGI server. Port can be set by Env variable DEBUG_HTTP_PORT (default: 5000)"
+	@echo "- serve-spec-redoc   Serve the spec using Redoc on localhost:8080"
+	@echo "- serve-spec-swagger Serve the spec using Swagger on localhost:8080/swagger"
 	@echo -e " \033[1mDocker TARGETS\033[0m "
 	@echo "- dockerlogin        Login to the AWS ECR registery for pulling/pushing docker images"
 	@echo "- dockerbuild        Build the project localy (with tag := $(DOCKER_IMG_LOCAL_TAG)) using the gunicorn WSGI server inside a container"
 	@echo "- dockerpush         Build and push the project localy (with tag := $(DOCKER_IMG_LOCAL_TAG))"
 	@echo "- dockerrun          Run the project using the gunicorn WSGI server inside a container (exposed port: 5000)"
-	@echo "- shutdown           Stop the aforementioned container"
 	@echo -e " \033[1mCLEANING TARGETS\033[0m "
 	@echo "- clean              Clean genereated files"
 	@echo "- clean_venv         Clean python venv"
+	@echo "- clean_logs         Clean logs"
+	@echo "- clean_vol_minio    Clean $(VOLUMES_MINIO)"
 
 
 # Build targets. Calling setup is all that is needed for the local files to be installed as needed.
@@ -196,11 +200,17 @@ clean_logs:
 clean_venv:
 	pipenv --rm
 
+.PHONY: clean_vol_minio
+clean_volumes_minio:
+	rm -rf $(VOLUMES_MINIO)
+
 
 .PHONY: clean
-clean: clean_venv clean_logs
+clean: clean_venv clean_logs clean_vol_minio
 	@# clean python cache files
 	find . -name __pycache__ -type d -print0 | xargs -I {} -0 rm -rf "{}"
+	rm -rf $(PYTHON_LOCAL_DIR)
+	rm -rf $(TEST_REPORT_DIR)
 	rm -rf $(TIMESTAMPS)
 
 
@@ -211,7 +221,7 @@ lint-spec:
 	docker run --volume "$(PWD)":/data jamescooke/openapi-validator -e openapi.yml
 
 
-.PHONY: serve-spec-recod
+.PHONY: serve-spec-redoc
 serve-spec-redoc:
 	docker run -it --rm -p 8080:80 \
 		-v "$(PWD)/openapi.yml":/usr/share/nginx/html/openapi.yml \

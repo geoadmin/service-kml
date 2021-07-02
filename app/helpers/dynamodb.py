@@ -1,4 +1,10 @@
-from app.helpers.utils import get_dynamodb_resource
+import boto3
+
+from botocore.client import Config
+
+
+def get_dynamodb_resource(region, endpoint_url):
+    return boto3.resource('dynamodb', endpoint_url=endpoint_url, config=Config(region_name=region))
 
 
 class DynamoDBFilesHandler:
@@ -12,21 +18,23 @@ class DynamoDBFilesHandler:
     def save_item(self, kml_admin_id, file_id, timestamp):
         self.table.put_item(
             Item={
-                'adminId': kml_admin_id,
+                'admin_id': kml_admin_id,
                 'file_id': file_id,
-                'timestamp': timestamp,
+                'created': timestamp,
+                'updated': timestamp,
+                'deleted': 'False',
                 'bucket': self.bucket_name
             }
         )
 
     def get_item(self, kml_admin_id):
-        item = self.table.get_item(Key={'adminId': str(kml_admin_id)}).get('Item', None)
+        item = self.table.get_item(Key={'admin_id': kml_admin_id}).get('Item', None)
         return item
 
     def update_item_timestamp(self, kml_admin_id, timestamp):
         self.table.update_item(
-            Key={'adminId': kml_admin_id},
-            AttributeUpdates={'timestamp': {
+            Key={'admin_id': kml_admin_id},
+            AttributeUpdates={'updated': {
                 'Value': timestamp, 'Action': 'PUT'
             }}
         )

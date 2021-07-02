@@ -61,12 +61,12 @@ class TestPostEndpoint(unittest.TestCase):
                 TableName=AWS_DB_TABLE_NAME,
                 AttributeDefinitions=[
                     {
-                        'AttributeName': 'adminId', 'AttributeType': 'S'
+                        'AttributeName': 'admin_id', 'AttributeType': 'S'
                     },
                 ],
                 KeySchema=[
                     {
-                        'AttributeName': 'adminId', 'KeyType': 'HASH'
+                        'AttributeName': 'admin_id', 'KeyType': 'HASH'
                     },
                 ]
             )
