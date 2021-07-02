@@ -13,7 +13,7 @@ class DynamoDBFilesHandler:
         self.table.put_item(
             Item={
                 'adminId': kml_admin_id,
-                'fileId': file_id,
+                'file_id': file_id,
                 'timestamp': timestamp,
                 'bucket': self.bucket_name
             }
