@@ -38,14 +38,21 @@ services:
       - "8080:8000"
   init-dynamo:
     image: amazon/aws-cli
-    command: [
-      "dynamodb",
-      "create-table",
-      "--table-name test-db",
-      "--attribute-definitions AttributeName=file_id,AttributeType=S",
-      "--key-schema AttributeName=file_id,KeyType=HASH",
-      "--provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1",
-      "--endpoint-url http://dynamodb-local:8000"]
+    command:
+      [
+        "dynamodb",
+        "create-table",
+        "--table-name",
+        "test-db",
+        "--attribute-definitions",
+        "AttributeName=admin_id,AttributeType=S",
+        "--key-schema",
+        "AttributeName=admin_id,KeyType=HASH",
+        "--provisioned-throughput",
+        "ReadCapacityUnits=1,WriteCapacityUnits=1",
+        "--endpoint-url",
+        "http://dynamodb-local:8000",
+      ]
     links:
       - dynamodb-local
     environment:
