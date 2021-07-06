@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
-ENV_FILE = os.getenv('ENV_FILE', f'{BASE_DIR}/.env.local')
+ENV_FILE = os.getenv('ENV_FILE', f'{BASE_DIR}/.env.default')
 if ENV_FILE:
     from dotenv import load_dotenv
 
