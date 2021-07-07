@@ -2,20 +2,27 @@
 .git
 .gitignore
 .gitmodules
-**/*.md
+*.orig
 
 # Docker
 docker-compose.yml
 docker-compose.yml.in
 .docker
+Dockerfile
 
 # Python
 *.pyc
 __pycache__
 
 # Files not used within docker
-./tests/*
+./tests
 Makefile
 .venv
 lib-makefiles/*
 buildspec.yml
+minio.env
+.env.local
+.volumes
+.*
+service_launcher.py
+logs

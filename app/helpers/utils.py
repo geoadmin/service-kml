@@ -32,7 +32,7 @@ def make_error_msg(code, msg):
 
 
 def get_logging_cfg():
-    cfg_file = os.getenv('LOGGING_CFG', 'logging-cfg-local.yml')
+    cfg_file = os.getenv('LOGGING_CFG', 'app/config/logging-cfg-local.yml')
 
     config = {}
     with open(cfg_file, 'rt') as fd:
