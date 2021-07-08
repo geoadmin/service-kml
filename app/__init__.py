@@ -59,6 +59,7 @@ def log_response(response):
     )
     return response
 
+
 # Register error handler to make sure that every error returns a json answer
 @app.errorhandler(HTTPException)
 def handle_exception(err):
