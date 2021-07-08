@@ -108,10 +108,16 @@ class TestGetEndpoint(unittest.TestCase):
         self.app = app.test_client()
         self.app.testing = True
         self.kml_string = """<root xmlns    = "https://www.exampel.ch/"
-                xmlns:py = "https://www.exampel.ch/">
-                <py:elem1 />
-                <elem2 xmlns="" />
-                </root>"""
+        xmlns:py = "https://www.exampel.ch/">
+        <py:elem1 />
+        <elem2 xmlns="" />
+        </root>"""
+
+        self.kml_invalid_string = """Hi <root xmlns    = "https://www.exampel.ch/"
+        xmlns:py = "https://www.exampel.ch/">
+        <py:elem1 />
+        <elem2 xmlns="" />
+        </root>"""
         try:
             s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME)
             location = {'LocationConstraint': AWS_S3_REGION_NAME}
@@ -130,12 +136,12 @@ class TestGetEndpoint(unittest.TestCase):
                 TableName=AWS_DB_TABLE_NAME,
                 AttributeDefinitions=[
                     {
-                        'AttributeName': 'adminId', 'AttributeType': 'S'
+                        'AttributeName': 'admin_id', 'AttributeType': 'S'
                     },
                 ],
                 KeySchema=[
                     {
-                        'AttributeName': 'adminId', 'KeyType': 'HASH'
+                        'AttributeName': 'admin_id', 'KeyType': 'HASH'
                     },
                 ]
             )
@@ -155,7 +161,6 @@ class TestGetEndpoint(unittest.TestCase):
 
     def test_get_id(self):
         # first step: create a kml file to retrieve
-
         response = self.app.post(
             "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
         )
@@ -168,7 +173,7 @@ class TestGetEndpoint(unittest.TestCase):
         stored_geoadmin_link = response.json['links']['kml']
         stored_kml_admin_link = response.json['links']['self']
 
-        # third step : test the get id enpoint
+        # third step : test the get id endpoint
 
         response = self.app.get(f"/kml/{id_to_fetch}")
         self.assertEqual(response.status_code, 200)

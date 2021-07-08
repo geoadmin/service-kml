@@ -91,8 +91,8 @@ def get_id(kml_admin_id):
                 'id': kml_admin_id,
                 'links':
                     {
-                        'self': f'{SERVICE_URL}/kml/{item["adminId"]}',
-                        'kml': f'public.geo.admin.ch/{item["fileId"]}'
+                        'self': f'{SERVICE_URL}/kml/{item["admin_id"]}',
+                        'kml': f'public.geo.admin.ch/{item["file_id"]}'
                     }
             }
         ),
