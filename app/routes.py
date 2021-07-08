@@ -68,7 +68,6 @@ def post_kml():
 
 @app.route('/kml/<kml_admin_id>', methods=['GET'])
 def get_id(kml_admin_id):
-    logger.debug("entering route /kml/%s", kml_admin_id)
     enforcer = DynamoDBFilesHandler(
         table_name=AWS_DB_TABLE_NAME,
         bucket_name=AWS_S3_BUCKET_NAME,
@@ -77,16 +76,15 @@ def get_id(kml_admin_id):
     )
     item = enforcer.get_item(kml_admin_id)
 
-    logger.debug(item)
     # Fetching a non existing Item will return "None"
     if item is None:
-        logger.info("exiting /kml/%s with a 400 status", kml_admin_id)
-        abort(400, f"{kml_admin_id} is not an existing kml id.")
+        logger.error("Could not find the following kml id in the database: %s", kml_admin_id)
+        abort(400, f"Could not find {kml_admin_id} within the database.")
 
-    logger.info("exiting /kml/%s with a 200 status", kml_admin_id)
     return make_response(
         jsonify(
             {
+                'success': True,
                 'code': 201,
                 'id': kml_admin_id,
                 'links':

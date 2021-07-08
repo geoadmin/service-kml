@@ -189,5 +189,5 @@ class TestGetEndpoint(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(
-            response.json['error']['message'], f'{id_to_fetch} is not an existing kml id.'
+            response.json['error']['message'], f'Could not find {id_to_fetch} within the database.'
         )
