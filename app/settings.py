@@ -9,8 +9,6 @@ if ENV_FILE:
     print(f"Running locally hence injecting env vars from {ENV_FILE}")
     load_dotenv(ENV_FILE, override=True, verbose=True)
 
-AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
 AWS_S3_BUCKET_NAME = os.environ['AWS_S3_BUCKET_NAME']
 AWS_S3_REGION_NAME = os.environ['AWS_S3_REGION_NAME']
 AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL', None)
