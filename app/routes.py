@@ -4,6 +4,7 @@ import time
 import uuid
 from urllib.parse import unquote_plus
 
+from flask import abort
 from flask import jsonify
 from flask import make_response
 from flask import request
@@ -62,4 +63,35 @@ def post_kml():
             }
         ),
         201
+    )
+
+
+@app.route('/kml/<kml_admin_id>', methods=['GET'])
+def get_id(kml_admin_id):
+    enforcer = DynamoDBFilesHandler(
+        table_name=AWS_DB_TABLE_NAME,
+        bucket_name=AWS_S3_BUCKET_NAME,
+        table_region=AWS_DB_REGION_NAME,
+        endpoint_url=AWS_DB_ENDPOINT_URL
+    )
+    item = enforcer.get_item(kml_admin_id)
+
+    # Fetching a non existing Item will return "None"
+    if item is None:
+        logger.error("Could not find the following kml id in the database: %s", kml_admin_id)
+        abort(400, f"Could not find {kml_admin_id} within the database.")
+
+    return make_response(
+        jsonify(
+            {
+                'success': True,
+                'id': kml_admin_id,
+                'links':
+                    {
+                        'self': f'{SERVICE_URL}/kml/{item["admin_id"]}',
+                        'kml': f'public.geo.admin.ch/{item["file_id"]}'
+                    }
+            }
+        ),
+        200
     )
