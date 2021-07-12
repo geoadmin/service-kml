@@ -58,7 +58,7 @@ def post_kml():
                 'links':
                     {
                         'self': f'{request.host_url}/kml/{kml_admin_id}',
-                        'kml': f'{KML_STORAGE_URL}/{kml_id}
+                        'kml': f'{KML_STORAGE_URL}/{kml_id}'
                     }
             }
         ),
