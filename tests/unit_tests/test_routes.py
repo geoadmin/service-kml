@@ -75,3 +75,43 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(
             response.json['error']['message'], f'Could not find {id_to_fetch} within the database.'
         )
+
+
+class TestPutEndpoint(BaseRouteTestCase):
+
+    def test_valid_kml_put(self):
+
+        response = self.app.post(
+            "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.content_type, "application/json")
+
+        id_to_fetch = response.json['id']
+
+        response = self.app.put(
+            f'/kml/{id_to_fetch}',
+            data=self.new_kml_string,
+            content_type="application/vnd.google-earth.kml+xml"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, "application/json")
+
+    def test_invalid_kml_put(self):
+
+        response = self.app.post(
+            "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.content_type, "application/json")
+
+        id_to_fetch = response.json['id']
+
+        response = self.app.put(
+            f'/kml/{id_to_fetch}',
+            data=self.kml_invalid_string,
+            content_type="application/vnd.google-earth.kml+xml"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json['error']['message'], 'Invalid kml file')
+        self.assertEqual(response.content_type, "application/json")
