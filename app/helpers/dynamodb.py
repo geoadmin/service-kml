@@ -38,3 +38,6 @@ class DynamoDBFilesHandler:
                 'Value': timestamp, 'Action': 'PUT'
             }}
         )
+
+    def delete_item(self, kml_admin_id):
+        self.table.delete_item(Key={'admin_id': kml_admin_id})
