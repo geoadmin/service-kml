@@ -1,5 +1,7 @@
+import base64
 import logging
 import unittest
+import uuid
 
 from app import app
 from app.version import APP_VERSION
@@ -81,21 +83,22 @@ class TestPutEndpoint(BaseRouteTestCase):
 
     def test_valid_kml_put(self):
 
-        response = self.app.post(
+        response_post = self.app.post(
             "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
         )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response_post.status_code, 201)
+        self.assertEqual(response_post.content_type, "application/json")
 
-        id_to_fetch = response.json['id']
+        id_to_put = response_post.json['id']
 
         response = self.app.put(
-            f'/kml/{id_to_fetch}',
+            f'/kml/{id_to_put}',
             data=self.new_kml_string,
             content_type="application/vnd.google-earth.kml+xml"
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response_post.json, response.json)
 
     def test_invalid_kml_put(self):
 
@@ -105,13 +108,29 @@ class TestPutEndpoint(BaseRouteTestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
 
-        id_to_fetch = response.json['id']
+        id_to_put = response.json['id']
 
         response = self.app.put(
-            f'/kml/{id_to_fetch}',
+            f'/kml/{id_to_put}',
             data=self.kml_invalid_string,
             content_type="application/vnd.google-earth.kml+xml"
         )
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json['error']['message'], 'Invalid kml file')
+        self.assertEqual(response.content_type, "application/json")
+
+    def test_update_non_existing_kml(self):
+
+        id_to_update = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
+
+        response = self.app.put(
+            f'/kml/{id_to_update}',
+            data=self.new_kml_string,
+            content_type="application/vnd.google-earth.kml+xml"
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json['error']['message'],
+            f'Could not find {id_to_update} within the database.'
+        )
         self.assertEqual(response.content_type, "application/json")

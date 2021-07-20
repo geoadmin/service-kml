@@ -57,7 +57,7 @@ def post_kml():
                 'id': kml_admin_id,
                 'links':
                     {
-                        'self': f'{request.host_url}/kml/{kml_admin_id}',
+                        'self': f'{request.host_url}kml/{kml_admin_id}',
                         'kml': f'{KML_STORAGE_URL}/{kml_id}'
                     }
             }
@@ -88,7 +88,7 @@ def get_id(kml_admin_id):
                 'id': kml_admin_id,
                 'links':
                     {
-                        'self': f'{request.host_url}/kml/{item["admin_id"]}',
+                        'self': f'{request.host_url}kml/{item["admin_id"]}',
                         'kml': f'{KML_STORAGE_URL}/{item["file_id"]}'
                     }
             }
@@ -132,7 +132,7 @@ def put_kml(kml_admin_id):
                 'id': kml_admin_id,
                 'links':
                     {
-                        'self': f'{request.host_url}/kml/{item["admin_id"]}',
+                        'self': f'{request.host_url}kml/{item["admin_id"]}',
                         'kml': f'{KML_STORAGE_URL}/{item["file_id"]}'
                     }
             }
