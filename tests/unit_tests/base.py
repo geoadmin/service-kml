@@ -29,6 +29,13 @@ class BaseRouteTestCase(unittest.TestCase):
         <py:elem1 />
         <elem2 xmlns="" />
         </root>"""
+
+        self.new_kml_string = """<root xmlns    = "https://www.update.de/"
+        xmlns:py = "https://www.update.de/">
+        <py:elem1 />
+        <elem2 xmlns="" />
+        </root>"""
+
         try:
             s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME)
             location = {'LocationConstraint': AWS_S3_REGION_NAME}
