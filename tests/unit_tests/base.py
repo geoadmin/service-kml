@@ -37,20 +37,22 @@ class BaseRouteTestCase(unittest.TestCase):
         </root>"""
 
         try:
-            s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME)
+            self.s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME)
             location = {'LocationConstraint': AWS_S3_REGION_NAME}
-            s3bucket.create_bucket(Bucket=AWS_S3_BUCKET_NAME, CreateBucketConfiguration=location)
-        except s3bucket.meta.client.exceptions.BucketAlreadyExists as err:
+            self.s3bucket.create_bucket(
+                Bucket=AWS_S3_BUCKET_NAME, CreateBucketConfiguration=location
+            )
+        except self.s3bucket.meta.client.exceptions.BucketAlreadyExists as err:
             logger.debug(
                 "Bucket %s already exists but should not.", err.response['Error']['BucketName']
             )
             raise err
 
         try:
-            dynamodb = boto3.resource(
+            self.dynamodb = boto3.resource(
                 'dynamodb', region_name=AWS_DB_REGION_NAME, endpoint_url=AWS_DB_ENDPOINT_URL
             )
-            dynamodb.create_table(
+            self.dynamodb.create_table(
                 TableName=AWS_DB_TABLE_NAME,
                 AttributeDefinitions=[
                     {
@@ -63,7 +65,7 @@ class BaseRouteTestCase(unittest.TestCase):
                     },
                 ]
             )
-        except dynamodb.meta.client.exceptions.ResourceInUseException as err:
+        except self.dynamodb.meta.client.exceptions.ResourceInUseException as err:
             logger.debug("Table %s already exists but should not.", AWS_DB_TABLE_NAME)
             raise err
 

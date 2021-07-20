@@ -1,9 +1,14 @@
 import base64
+import datetime
 import logging
 import unittest
 import uuid
+from datetime import timedelta
+from time import sleep
 
 from app import app
+from app.settings import AWS_DB_TABLE_NAME
+from app.settings import AWS_S3_BUCKET_NAME
 from app.version import APP_VERSION
 from tests.unit_tests.base import BaseRouteTestCase
 
@@ -88,6 +93,10 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response_post.status_code, 201)
         self.assertEqual(response_post.content_type, "application/json")
+        # sleep 0.2 seconds between POST and PUT, in order to make the
+        # assertAlmostEqual below work, when comparing current time and
+        # "updated" time.
+        sleep(0.5)
 
         id_to_put = response_post.json['id']
 
@@ -103,6 +112,19 @@ class TestPutEndpoint(BaseRouteTestCase):
             # this assertion
             if key != "updated":
                 self.assertEqual(response_post.json[key], response.json[key])
+
+        updated_item = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(Key={
+            'admin_id': id_to_put
+        }).get('Item', None)
+        self.assertAlmostEqual(
+            datetime.datetime.fromisoformat(updated_item["updated"]).replace(tzinfo=None),
+            datetime.datetime.utcnow(),
+            delta=timedelta(seconds=0.3)
+        )
+        file_id = updated_item["file_id"]
+        obj = self.s3bucket.meta.client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=file_id)
+        body = obj['Body'].read()
+        self.assertEqual(body.decode("utf-8"), self.new_kml_string)
 
     def test_invalid_kml_put(self):
 
