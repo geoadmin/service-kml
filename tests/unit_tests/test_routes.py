@@ -121,6 +121,10 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response_post.json, response.json)
+
         file_id = updated_item["file_id"]
         obj = self.s3bucket.meta.client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=file_id)
         body = obj['Body'].read()
