@@ -1,6 +1,6 @@
 import base64
+import datetime
 import logging
-import time
 import uuid
 from urllib.parse import unquote_plus
 
@@ -40,7 +40,7 @@ def post_kml():
     kml_string = validate_kml_string(data)
     kml_admin_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
     kml_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
-    timestamp = time.strftime('%Y-%m-%d %X', time.localtime())
+    timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
     executor = S3FileHandling(AWS_S3_REGION_NAME, AWS_S3_ENDPOINT_URL)
     executor.upload_object_to_bucket(kml_id, kml_string, bucket_name=AWS_S3_BUCKET_NAME)
     enforcer = DynamoDBFilesHandler(
@@ -122,7 +122,7 @@ def put_kml(kml_admin_id):
     executor = S3FileHandling(AWS_S3_REGION_NAME, AWS_S3_ENDPOINT_URL)
     executor.upload_object_to_bucket(kml_id, kml_string, bucket_name=AWS_S3_BUCKET_NAME)
 
-    timestamp = time.strftime('%Y-%m-%d %X', time.localtime())
+    timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
     enforcer.update_item_timestamp(kml_admin_id, timestamp)
 
     return make_response(
