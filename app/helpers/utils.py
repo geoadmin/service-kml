@@ -72,7 +72,7 @@ def validate_content_type(content):
         @wraps(func)
         def wrapped(*args, **kwargs):
             if request.content_type != content:
-                abort(make_error_msg(415, 'Unsupported Media Type'))
+                abort(415, 'Unsupported Media Type')
             return func(*args, **kwargs)
 
         return wrapped

@@ -155,7 +155,7 @@ def delete_id(kml_admin_id):
     # Fetching a non existing Item will return "None"
     if item is None:
         logger.error("Could not find the following kml id in the database: %s", kml_admin_id)
-        abort(400, f"Could not find {kml_admin_id} within the database.")
+        abort(404, f"Could not find {kml_admin_id} within the database.")
 
     file_id = item['file_id']
 
@@ -167,13 +167,9 @@ def delete_id(kml_admin_id):
     return make_response(
         jsonify(
             {
-                'success': True,
-                'id': kml_admin_id,
-                'links':
-                    {
-                        'self': f'{request.host_url}/kml/{item["admin_id"]}',
-                        'kml': f'{KML_STORAGE_URL}/{item["file_id"]}'
-                    }
+                "success": True,
+                "id": kml_admin_id,
+                "message": f'The kml {item["admin_id"]} was successfully deleted.'
             }
         ),
         200

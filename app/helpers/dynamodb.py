@@ -1,6 +1,13 @@
+import logging
+
+from flask import abort
+
 import boto3
 
 from botocore.client import Config
+from botocore.exceptions import EndpointConnectionError
+
+logger = logging.getLogger(__name__)
 
 
 def get_dynamodb_resource(region, endpoint_url):
@@ -16,28 +23,44 @@ class DynamoDBFilesHandler:
         self.endpoint = endpoint_url
 
     def save_item(self, kml_admin_id, file_id, timestamp):
-        self.table.put_item(
-            Item={
-                'admin_id': kml_admin_id,
-                'file_id': file_id,
-                'created': timestamp,
-                'updated': timestamp,
-                'deleted': 'False',
-                'bucket': self.bucket_name
-            }
-        )
+        try:
+            self.table.put_item(
+                Item={
+                    'admin_id': kml_admin_id,
+                    'file_id': file_id,
+                    'created': timestamp,
+                    'updated': timestamp,
+                    'deleted': 'False',
+                    'bucket': self.bucket_name
+                }
+            )
+        except EndpointConnectionError as error:
+            logger.exception('Failed to connect to DynamoDB: %s', error)
+            abort(502, 'Backend DB connection error, please consult logs')
 
     def get_item(self, kml_admin_id):
-        item = self.table.get_item(Key={'admin_id': kml_admin_id}).get('Item', None)
+        try:
+            item = self.table.get_item(Key={'admin_id': kml_admin_id}).get('Item', None)
+        except EndpointConnectionError as error:
+            logger.exception('Failed to connect to DynamoDB: %s', error)
+            abort(502, 'Backend DB connection error, please consult logs')
         return item
 
     def update_item_timestamp(self, kml_admin_id, timestamp):
-        self.table.update_item(
-            Key={'admin_id': kml_admin_id},
-            AttributeUpdates={'updated': {
-                'Value': timestamp, 'Action': 'PUT'
-            }}
-        )
+        try:
+            self.table.update_item(
+                Key={'admin_id': kml_admin_id},
+                AttributeUpdates={'updated': {
+                    'Value': timestamp, 'Action': 'PUT'
+                }}
+            )
+        except EndpointConnectionError as error:
+            logger.exception('Failed to connect to DynamoDB: %s', error)
+            abort(502, 'Backend DB connection error, please consult logs')
 
     def delete_item(self, kml_admin_id):
-        self.table.delete_item(Key={'admin_id': kml_admin_id})
+        try:
+            self.table.delete_item(Key={'admin_id': kml_admin_id})
+        except EndpointConnectionError as error:
+            logger.exception('Failed to connect to DynamoDB: %s', error)
+            abort(502, 'Backend DB connection error, please consult logs')

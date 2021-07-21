@@ -50,6 +50,8 @@ class TestGetEndpoint(BaseRouteTestCase):
         response = self.app.post(
             "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
         )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.content_type, "application/json")
 
         # second step : fetch the id
 
@@ -154,7 +156,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         id_to_delete = 'nonExistentId'
         response = self.app.delete(f"kml/{id_to_delete}")
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(
             response.json['error']['message'],
