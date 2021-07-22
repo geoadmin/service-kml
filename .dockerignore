@@ -2,7 +2,7 @@
 .git
 .gitignore
 .gitmodules
-*.orig
+**/*.orig
 
 # Docker
 docker-compose.yml
@@ -11,8 +11,8 @@ docker-compose.yml.in
 Dockerfile
 
 # Python
-*.pyc
-__pycache__
+**/*.pyc
+**/__pycache__
 
 # Files not used within docker
 ./tests
@@ -21,7 +21,7 @@ Makefile
 lib-makefiles/*
 buildspec.yml
 minio.env
-.env.local
+.env.*
 .volumes
 .*
 service_launcher.py
