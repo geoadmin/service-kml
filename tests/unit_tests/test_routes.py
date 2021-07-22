@@ -72,7 +72,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         id_to_fetch = 'nonExistentId'
         response = self.app.get(f"kml/{id_to_fetch}")
 
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(
             response.json['error']['message'], f'Could not find {id_to_fetch} within the database.'
@@ -127,7 +127,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             data=self.new_kml_string,
             content_type="application/vnd.google-earth.kml+xml"
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
         self.assertEqual(
             response.json['error']['message'],
             f'Could not find {id_to_update} within the database.'
@@ -151,7 +151,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")
 
         response = self.app.get(f"/kml/{id_to_delete}")
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
 
     def test_delete_id_nonexistent(self):
         id_to_delete = 'nonExistentId'

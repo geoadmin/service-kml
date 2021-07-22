@@ -4,22 +4,15 @@ import logging
 import uuid
 from urllib.parse import unquote_plus
 
-from flask import abort
 from flask import jsonify
 from flask import make_response
 from flask import request
 
 from app import app
-from app.helpers.dynamodb import DynamoDBFilesHandler
-from app.helpers.s3 import S3FileHandling
+from app.helpers.dynamodb import get_db
+from app.helpers.s3 import get_storage
 from app.helpers.utils import validate_content_type
 from app.helpers.utils import validate_kml_string
-from app.settings import AWS_DB_ENDPOINT_URL
-from app.settings import AWS_DB_REGION_NAME
-from app.settings import AWS_DB_TABLE_NAME
-from app.settings import AWS_S3_BUCKET_NAME
-from app.settings import AWS_S3_ENDPOINT_URL
-from app.settings import AWS_S3_REGION_NAME
 from app.settings import KML_STORAGE_URL
 from app.version import APP_VERSION
 
@@ -41,16 +34,11 @@ def post_kml():
     kml_admin_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
     kml_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
     timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
-    executor = S3FileHandling(AWS_S3_REGION_NAME, AWS_S3_ENDPOINT_URL)
-    executor.upload_object_to_bucket(kml_id, kml_string, bucket_name=AWS_S3_BUCKET_NAME)
-    enforcer = DynamoDBFilesHandler(
-        table_name=AWS_DB_TABLE_NAME,
-        bucket_name=AWS_S3_BUCKET_NAME,
-        table_region=AWS_DB_REGION_NAME,
-        endpoint_url=AWS_DB_ENDPOINT_URL
-    )
-    enforcer.save_item(kml_admin_id, kml_id, timestamp)
-    item = enforcer.get_item(kml_admin_id)
+    storage = get_storage()
+    storage.upload_object_to_bucket(kml_id, kml_string)
+    db = get_db()  # pylint: disable=invalid-name
+    db.save_item(kml_admin_id, kml_id, timestamp)
+    item = db.get_item(kml_admin_id)
 
     return make_response(
         jsonify(
@@ -72,18 +60,8 @@ def post_kml():
 
 @app.route('/kml/<kml_admin_id>', methods=['GET'])
 def get_id(kml_admin_id):
-    enforcer = DynamoDBFilesHandler(
-        table_name=AWS_DB_TABLE_NAME,
-        bucket_name=AWS_S3_BUCKET_NAME,
-        table_region=AWS_DB_REGION_NAME,
-        endpoint_url=AWS_DB_ENDPOINT_URL
-    )
-    item = enforcer.get_item(kml_admin_id)
-
-    # Fetching a non existing Item will return "None"
-    if item is None:
-        logger.error("Could not find the following kml id in the database: %s", kml_admin_id)
-        abort(400, f"Could not find {kml_admin_id} within the database.")
+    db = get_db()  # pylint: disable=invalid-name
+    item = db.get_item(kml_admin_id)
 
     return make_response(
         jsonify(
@@ -106,18 +84,8 @@ def get_id(kml_admin_id):
 @app.route('/kml/<kml_admin_id>', methods=['PUT'])
 @validate_content_type("application/vnd.google-earth.kml+xml")
 def put_kml(kml_admin_id):
-    enforcer = DynamoDBFilesHandler(
-        table_name=AWS_DB_TABLE_NAME,
-        bucket_name=AWS_S3_BUCKET_NAME,
-        table_region=AWS_DB_REGION_NAME,
-        endpoint_url=AWS_DB_ENDPOINT_URL
-    )
-    item = enforcer.get_item(kml_admin_id)
-
-    # Fetching a non existing Item will return "None"
-    if item is None:
-        logger.error("Could not find the following kml id in the database: %s", kml_admin_id)
-        abort(400, f"Could not find {kml_admin_id} within the database.")
+    db = get_db()  # pylint: disable=invalid-name
+    item = db.get_item(kml_admin_id)
 
     kml_id = item['file_id']
 
@@ -125,12 +93,12 @@ def put_kml(kml_admin_id):
     data = unquote_plus(quoted_str)
     kml_string = validate_kml_string(data)
 
-    executor = S3FileHandling(AWS_S3_REGION_NAME, AWS_S3_ENDPOINT_URL)
-    executor.upload_object_to_bucket(kml_id, kml_string, bucket_name=AWS_S3_BUCKET_NAME)
+    storage = get_storage()
+    storage.upload_object_to_bucket(kml_id, kml_string)
 
     timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
-    enforcer.update_item_timestamp(kml_admin_id, timestamp)
-    item = enforcer.get_item(kml_admin_id)
+    db.update_item_timestamp(kml_admin_id, timestamp)
+    item = db.get_item(kml_admin_id)
 
     return make_response(
         jsonify(
@@ -152,25 +120,15 @@ def put_kml(kml_admin_id):
 
 @app.route('/kml/<kml_admin_id>', methods=['DELETE'])
 def delete_id(kml_admin_id):
-    enforcer = DynamoDBFilesHandler(
-        table_name=AWS_DB_TABLE_NAME,
-        bucket_name=AWS_S3_BUCKET_NAME,
-        table_region=AWS_DB_REGION_NAME,
-        endpoint_url=AWS_DB_ENDPOINT_URL
-    )
-    item = enforcer.get_item(kml_admin_id)
-
-    # Fetching a non existing Item will return "None"
-    if item is None:
-        logger.error("Could not find the following kml id in the database: %s", kml_admin_id)
-        abort(404, f"Could not find {kml_admin_id} within the database.")
+    db = get_db()  # pylint: disable=invalid-name
+    item = db.get_item(kml_admin_id)
 
     file_id = item['file_id']
 
-    executor = S3FileHandling(AWS_S3_REGION_NAME, AWS_S3_ENDPOINT_URL)
-    executor.delete_file_in_bucket(AWS_S3_BUCKET_NAME, file_id)
+    storage = get_storage()
+    storage.delete_file_in_bucket(file_id)
 
-    enforcer.delete_item(kml_admin_id)
+    db.delete_item(kml_admin_id)
 
     return make_response(
         jsonify(
