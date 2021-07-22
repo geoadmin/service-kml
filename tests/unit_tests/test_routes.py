@@ -98,7 +98,6 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response_post.json, response.json)
 
     def test_invalid_kml_put(self):
 
@@ -134,11 +133,13 @@ class TestPutEndpoint(BaseRouteTestCase):
             f'Could not find {id_to_update} within the database.'
         )
         self.assertEqual(response.content_type, "application/json")
+
+
 class TestDeleteEndpoint(BaseRouteTestCase):
 
     def test_delete_endpoint(self):
         response = self.app.post(
-        "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
+            "/kml", data=self.kml_string, content_type="application/vnd.google-earth.kml+xml"
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")

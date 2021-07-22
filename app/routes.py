@@ -50,11 +50,15 @@ def post_kml():
         endpoint_url=AWS_DB_ENDPOINT_URL
     )
     enforcer.save_item(kml_admin_id, kml_id, timestamp)
+    item = enforcer.get_item(kml_admin_id)
+
     return make_response(
         jsonify(
             {
                 'success': True,
                 'id': kml_admin_id,
+                'created': item['created'],
+                'updated': item['updated'],
                 'links':
                     {
                         'self': f'{request.host_url}kml/{kml_admin_id}',
@@ -86,6 +90,8 @@ def get_id(kml_admin_id):
             {
                 'success': True,
                 'id': kml_admin_id,
+                'created': item['created'],
+                'updated': item['updated'],
                 'links':
                     {
                         'self': f'{request.host_url}kml/{item["admin_id"]}',
@@ -107,7 +113,6 @@ def put_kml(kml_admin_id):
         endpoint_url=AWS_DB_ENDPOINT_URL
     )
     item = enforcer.get_item(kml_admin_id)
-    file_id = item['file_id']
 
     # Fetching a non existing Item will return "None"
     if item is None:
@@ -125,12 +130,15 @@ def put_kml(kml_admin_id):
 
     timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
     enforcer.update_item_timestamp(kml_admin_id, timestamp)
+    item = enforcer.get_item(kml_admin_id)
 
     return make_response(
         jsonify(
             {
                 'success': True,
                 'id': kml_admin_id,
+                'created': item['created'],
+                'updated': item['updated'],
                 'links':
                     {
                         'self': f'{request.host_url}kml/{item["admin_id"]}',
