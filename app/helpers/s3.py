@@ -64,11 +64,7 @@ class S3FileHandling:
             abort(502, 'Backend file storage connection error, please consult logs')
         return response
 
-    def upload_object_to_bucket(
-        self,
-        file_id,
-        data,
-    ):
+    def upload_object_to_bucket(self, file_id, data):
         logger.debug("Uploading file %s to bucket %s.", file_id, AWS_S3_BUCKET_NAME)
         try:
             response = self.s3.put_object(Body=data, Bucket=AWS_S3_BUCKET_NAME, Key=file_id)
