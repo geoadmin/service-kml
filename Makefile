@@ -142,6 +142,7 @@ format-lint: format lint
 
 .PHONY: test
 test:
+	mkdir -p $(TEST_REPORT_DIR)
 	ENV_FILE=.env.testing $(NOSE) -c tests/unittest.cfg --verbose --junit-xml-path $(TEST_REPORT_DIR)/$(TEST_REPORT_FILE) -s tests/
 
 
