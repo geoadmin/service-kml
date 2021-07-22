@@ -19,6 +19,7 @@
   - [Setting up to work](#setting-up-to-work)
   - [Linting and formatting your work](#linting-and-formatting-your-work)
   - [Test your work](#test-your-work)
+    - [Testing with curl](#testing-with-curl)
   - [Docker helpers](#docker-helpers)
 - [Deployment](#deployment)
   - [Deployment configuration](#deployment-configuration)
@@ -48,13 +49,13 @@ Payload is the kml drawn in the map.
 
 | Path | Method | Content Type | Refer | Response Type|
 |------|--------|--------------|-------|--------------|
-| | POST | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
+| /kml | POST | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
 
 ### GET
 
 | Path | Method | Response Type|
 |------|--------|--------------|
-| | GET | application/vnd.google-earth.kml+xml |
+| /kml/<id> | GET | application/vnd.google-earth.kml+xml |
 
 ### PUT
 
@@ -62,7 +63,7 @@ Payload is the kml to update.
 
 | Path | Method | Content Type | Refer | Response Type|
 |------|--------|--------------|-------|--------------|
-| | PUT | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
+| /kml/<id> | PUT | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
 
 ## Versioning
 
@@ -79,6 +80,7 @@ The **Make** targets assume you have **python3.7**, **pipenv**, **bash**, **curl
 ### Setting up to work
 
 First, you'll need to clone the repo
+
 ```bash
 git clone git@github.com:geoadmin/service-kml
 ```
@@ -86,6 +88,7 @@ git clone git@github.com:geoadmin/service-kml
 create and adapt your local copy of .env.default to your needs.
 Afterwards source it (otherwise default values will be used by the service) and
 let ENV_FILE point to your local env file:
+
 ```bash
 cp .env.default .env.local
 source .env.local
@@ -93,6 +96,7 @@ export ENV_FILE=.env.local
 ```
 
 Then, you can run the setup target to ensure you have everything needed to develop, test and serve locally
+
 ```bash
 make setup
 ```
@@ -109,51 +113,89 @@ in the source root folder. Make sure to run `make setup` before to ensure the ne
 
 That's it, you're ready to work.
 ### Linting and formatting your work
+
 In order to have a consistent code style the code should be formatted using `yapf`. Also to avoid syntax errors and non
 pythonic idioms code, the project uses the `pylint` linter. Both formatting and linter can be manually run using the
 following command:
+
 ```bash
 make format-lint
 ```
+
 **Formatting and linting should be at best integrated inside the IDE, for this look at
 [Integrate yapf and pylint into IDE](https://github.com/geoadmin/doc-guidelines/blob/master/PYTHON.md#yapf-and-pylint-ide-integration)**
+
 ### Test your work
+
 Testing if what you developed work is made simple. You have four targets at your disposal. **test, serve, gunicornserve, dockerrun**
+
 ```bash
 make test
 ```
+
 This command run the integration and unit tests.
+
 ```bash
 make serve
 ```
+
 This will serve the application through Flask without any wsgi in front.
+
 ```bash
 make gunicornserve
 ```
+
 This will serve the application with the Gunicorn layer in front of the application
+
 ```bash
 make serve-spec-redoc
 ```
+
 This serve the spec using Redoc on localhost:8080
+
 ```bash
 make serve-spec-swagger 
 ```
+
 This serve the spec using Swagger on localhost:8080/swagger
+
 ```bash
 make dockerrun
 ```
+
 This will serve the application with the wsgi server, inside a container.
 To stop serving through containers,
+
 ```bash
 make shutdown
 ```
+
 Is the command you're looking for.
+
+#### Testing with curl
+
+Here some curl examples
+
+```bash
+# post a kml
+curl -X POST http://localhost:5000/kml --data "@./tests/samples/simple-kml.xml" -H "Content-Type: application/vnd.google-earth.kml+xml"
+
+# get the kml metadata
+curl http://localhost:5000/kml/${KML_ID}
+
+# update the kml file
+curl -X PUT http://localhost:5000/kml/${KML_ID} --data "@./tests/samples/simple-kml.xml" -H "Content-Type: application/vnd.google-earth.kml+xml"
+
+# delete the kml
+curl -X DELETE http://localhost:5000/kml/${KML_ID}
+```
+
 ### Docker helpers
 
 From each github PR that is merged into `master` or into `develop`, one Docker image is built and pushed on AWS ECR with the following tag:
 
 - `vX.X.X` for tags on master
-- `vX.X.X-beta.X` for tags on develop 
+- `vX.X.X-beta.X` for tags on develop
 
 Each image contains the following metadata:
 
@@ -195,11 +237,11 @@ make dockerlogin
 make dockerpush
 ```
 
-
 ## Deployment
 
 This service is to be deployed to the Kubernetes cluster once it is merged.
 TO DO: give instructions to deploy to kubernetes.
+
 ### Deployment configuration
 
 The service is configured by Environment Variable:
