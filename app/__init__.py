@@ -61,23 +61,15 @@ def log_response(response):
 
 
 # Register error handler to make sure that every error returns a json answer
-@app.errorhandler(HTTPException)
+@app.errorhandler(Exception)
 def handle_exception(err):
     """Return JSON instead of HTML for HTTP errors."""
-    logger.error('Request failed code=%d description=%s', err.code, err.description)
-    return make_error_msg(err.code, err.description)
+    if isinstance(err, HTTPException):
+        logger.error(err)
+        return make_error_msg(err.code, err.description)
+
+    logger.exception('Unexpected exception: %s', err)
+    return make_error_msg(500, "Internal server error, please consult logs")
 
 
 from app import routes  # pylint: disable=wrong-import-position
-
-
-def main():
-    app.run()
-
-
-if __name__ == '__main__':
-    """
-    Entrypoint for the application. At the moment, we do nothing specific, but there might be
-    preparatory steps in the future
-    """
-    main()

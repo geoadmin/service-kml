@@ -50,11 +50,15 @@ def post_kml():
         endpoint_url=AWS_DB_ENDPOINT_URL
     )
     enforcer.save_item(kml_admin_id, kml_id, timestamp)
+    item = enforcer.get_item(kml_admin_id)
+
     return make_response(
         jsonify(
             {
                 'success': True,
                 'id': kml_admin_id,
+                'created': item['created'],
+                'updated': item['updated'],
                 'links':
                     {
                         'self': f'{request.host_url}kml/{kml_admin_id}',
@@ -86,6 +90,8 @@ def get_id(kml_admin_id):
             {
                 'success': True,
                 'id': kml_admin_id,
+                'created': item['created'],
+                'updated': item['updated'],
                 'links':
                     {
                         'self': f'{request.host_url}kml/{item["admin_id"]}',
@@ -124,17 +130,54 @@ def put_kml(kml_admin_id):
 
     timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
     enforcer.update_item_timestamp(kml_admin_id, timestamp)
+    item = enforcer.get_item(kml_admin_id)
 
     return make_response(
         jsonify(
             {
                 'success': True,
                 'id': kml_admin_id,
+                'created': item['created'],
+                'updated': item['updated'],
                 'links':
                     {
                         'self': f'{request.host_url}kml/{item["admin_id"]}',
                         'kml': f'{KML_STORAGE_URL}/{item["file_id"]}'
                     }
+            }
+        ),
+        200
+    )
+
+
+@app.route('/kml/<kml_admin_id>', methods=['DELETE'])
+def delete_id(kml_admin_id):
+    enforcer = DynamoDBFilesHandler(
+        table_name=AWS_DB_TABLE_NAME,
+        bucket_name=AWS_S3_BUCKET_NAME,
+        table_region=AWS_DB_REGION_NAME,
+        endpoint_url=AWS_DB_ENDPOINT_URL
+    )
+    item = enforcer.get_item(kml_admin_id)
+
+    # Fetching a non existing Item will return "None"
+    if item is None:
+        logger.error("Could not find the following kml id in the database: %s", kml_admin_id)
+        abort(404, f"Could not find {kml_admin_id} within the database.")
+
+    file_id = item['file_id']
+
+    executor = S3FileHandling(AWS_S3_REGION_NAME, AWS_S3_ENDPOINT_URL)
+    executor.delete_file_in_bucket(AWS_S3_BUCKET_NAME, file_id)
+
+    enforcer.delete_item(kml_admin_id)
+
+    return make_response(
+        jsonify(
+            {
+                "success": True,
+                "id": kml_admin_id,
+                "message": f'The kml {item["admin_id"]} was successfully deleted.'
             }
         ),
         200
