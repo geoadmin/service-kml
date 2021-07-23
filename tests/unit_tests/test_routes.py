@@ -8,7 +8,6 @@ from time import sleep
 
 from app import app
 from app.settings import AWS_DB_TABLE_NAME
-from app.settings import AWS_S3_BUCKET_NAME
 from app.version import APP_VERSION
 from tests.unit_tests.base import BaseRouteTestCase
 
@@ -36,6 +35,7 @@ class TestPostEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
+        self.compare_kml_contents(response, self.kml_string)
 
     def test_invalid_kml_post(self):
         response = self.app.post(
@@ -57,6 +57,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
+        self.compare_kml_contents(response, self.kml_string)
 
         # second step : fetch the id
 
@@ -93,6 +94,8 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response_post.status_code, 201)
         self.assertEqual(response_post.content_type, "application/json")
+        self.compare_kml_contents(response_post, self.kml_string)
+
         # sleep 0.2 seconds between POST and PUT, in order to make the
         # assertAlmostEqual below work, when comparing current time and
         # "updated" time.
@@ -121,11 +124,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
-
-        file_id = updated_item["file_id"]
-        obj = self.s3bucket.meta.client.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=file_id)
-        body = obj['Body'].read()
-        self.assertEqual(body.decode("utf-8"), self.new_kml_string)
+        self.compare_kml_contents(response_post, self.new_kml_string)
 
     def test_invalid_kml_put(self):
 
@@ -134,6 +133,7 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
+        self.compare_kml_contents(response, self.kml_string)
 
         id_to_put = response.json['id']
 
@@ -171,6 +171,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
+        self.compare_kml_contents(response, self.kml_string)
 
         id_to_delete = response.json['id']
 
