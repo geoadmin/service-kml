@@ -98,6 +98,11 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, "application/json")
+        for key in response_post.json:
+            # values for "updated" should and may differ, so ignore them in
+            # this assertion
+            if key != "updated":
+                self.assertEqual(response_post.json[key], response.json[key])
 
     def test_invalid_kml_put(self):
 
