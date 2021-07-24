@@ -20,44 +20,28 @@ logger = logging.getLogger(__name__)
 
 class BaseRouteTestCase(unittest.TestCase):
 
-    def setUp(self):
-        self.app = app.test_client()
-        self.app.testing = True
-        self.kml_string = """<root xmlns    = "https://www.example.ch/"
-        xmlns:py = "https://www.example.ch/">
-        <py:elem1 />
-        <elem2 xmlns="" />
-        </root>"""
-
-        self.kml_invalid_string = """Hi <root xmlns    = "https://www.example.ch/"
-        xmlns:py = "https://www.example.ch/">
-        <py:elem1 />
-        <elem2 xmlns="" />
-        </root>"""
-
-        self.new_kml_string = """<root xmlns    = "https://www.update.de/"
-        xmlns:py = "https://www.update.de/">
-        <py:elem1 />
-        <elem2 xmlns="" />
-        </root>"""
-
+    @classmethod
+    def create_bucket(cls):
+        '''Method that creates a mocked s3 bucket for unit testing'''
         try:
-            self.s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME)
+            s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME)
             location = {'LocationConstraint': AWS_S3_REGION_NAME}
-            self.s3bucket.create_bucket(
-                Bucket=AWS_S3_BUCKET_NAME, CreateBucketConfiguration=location
-            )
-        except self.s3bucket.meta.client.exceptions.BucketAlreadyExists as err:
+            s3bucket.create_bucket(Bucket=AWS_S3_BUCKET_NAME, CreateBucketConfiguration=location)
+        except s3bucket.meta.client.exceptions.BucketAlreadyExists as err:
             logger.debug(
                 "Bucket %s already exists but should not.", err.response['Error']['BucketName']
             )
             raise err
+        return s3bucket
 
+    @classmethod
+    def create_dynamodb(cls):
+        '''Method that creates a mocked DynamoDB for unit testing'''
         try:
-            self.dynamodb = boto3.resource(
+            dynamodb = boto3.resource(
                 'dynamodb', region_name=AWS_DB_REGION_NAME, endpoint_url=AWS_DB_ENDPOINT_URL
             )
-            self.dynamodb.create_table(
+            dynamodb.create_table(
                 TableName=AWS_DB_TABLE_NAME,
                 AttributeDefinitions=[
                     {
@@ -70,9 +54,41 @@ class BaseRouteTestCase(unittest.TestCase):
                     },
                 ]
             )
-        except self.dynamodb.meta.client.exceptions.ResourceInUseException as err:
+        except dynamodb.meta.client.exceptions.ResourceInUseException as err:
             logger.debug("Table %s already exists but should not.", AWS_DB_TABLE_NAME)
             raise err
+        return dynamodb
+
+    def setUp(self):
+        self.app = app.test_client()
+        self.app.testing = True
+        self.origin_headers = {
+            "allowed": {
+                "Origin": "map.geo.admin.ch"
+            }, "bad": {
+                "Origin": "big-bad-wolf.com"
+            }
+        }
+        self.kml_string = {}
+        self.kml_string["valid"] = """<root xmlns    = "https://www.example.ch/"
+        xmlns:py = "https://www.example.ch/">
+        <py:elem1 />
+        <elem2 xmlns="" />
+        </root>"""
+
+        self.kml_string["invalid"] = """Hi <root xmlns    = "https://www.example.ch/"
+        xmlns:py = "https://www.example.ch/">
+        <py:elem1 />
+        <elem2 xmlns="" />
+        </root>"""
+
+        self.kml_string["updated"] = """<root xmlns    = "https://www.update.de/"
+        xmlns:py = "https://www.update.de/">
+        <py:elem1 />
+        <elem2 xmlns="" />
+        </root>"""
+        self.s3bucket = self.create_bucket()
+        self.dynamodb = self.create_dynamodb()
 
     def compare_kml_contents(self, response, expected_kml):
         # pylint: disable=duplicate-code
