@@ -32,18 +32,18 @@ class TestPostEndpoint(BaseRouteTestCase):
     def test_valid_kml_post(self):
         response = self.app.post(
             "/kml",
-            data=self.kml_string["valid"],
+            data=self.kml_dict["valid"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_string["valid"])
+        self.compare_kml_contents(response, self.kml_dict["valid"])
 
     def test_invalid_kml_post(self):
         response = self.app.post(
             "/kml",
-            data=self.kml_string["invalid"],
+            data=self.kml_dict["invalid"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
@@ -54,7 +54,7 @@ class TestPostEndpoint(BaseRouteTestCase):
     def test_valid_kml_post_non_allowed_origin(self):
         response = self.app.post(
             "/kml",
-            data=self.kml_string["valid"],
+            data=self.kml_dict["valid"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["bad"]
         )
@@ -69,13 +69,13 @@ class TestGetEndpoint(BaseRouteTestCase):
         # first step: create a kml file to retrieve
         response = self.app.post(
             "/kml",
-            data=self.kml_string["valid"],
+            data=self.kml_dict["valid"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_string["valid"])
+        self.compare_kml_contents(response, self.kml_dict["valid"])
 
         # second step : fetch the id
 
@@ -108,13 +108,13 @@ class TestPutEndpoint(BaseRouteTestCase):
 
         response_post = self.app.post(
             "/kml",
-            data=self.kml_string["valid"],
+            data=self.kml_dict["valid"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response_post.status_code, 201)
         self.assertEqual(response_post.content_type, "application/json")
-        self.compare_kml_contents(response_post, self.kml_string["valid"])
+        self.compare_kml_contents(response_post, self.kml_dict["valid"])
 
         # sleep 0.2 seconds between POST and PUT, in order to make the
         # assertAlmostEqual below work, when comparing current time and
@@ -125,7 +125,7 @@ class TestPutEndpoint(BaseRouteTestCase):
 
         response = self.app.put(
             f'/kml/{id_to_put}',
-            data=self.kml_string["updated"],
+            data=self.kml_dict["updated"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
@@ -145,25 +145,25 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
-        self.compare_kml_contents(response_post, self.kml_string["updated"])
+        self.compare_kml_contents(response_post, self.kml_dict["updated"])
 
     def test_invalid_kml_put(self):
 
         response = self.app.post(
             "/kml",
-            data=self.kml_string["valid"],
+            data=self.kml_dict["valid"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_string["valid"])
+        self.compare_kml_contents(response, self.kml_dict["valid"])
 
         id_to_put = response.json['id']
 
         response = self.app.put(
             f'/kml/{id_to_put}',
-            data=self.kml_string["invalid"],
+            data=self.kml_dict["invalid"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
@@ -177,7 +177,7 @@ class TestPutEndpoint(BaseRouteTestCase):
 
         response = self.app.put(
             f'/kml/{id_to_update}',
-            data=self.kml_string["updated"],
+            data=self.kml_dict["updated"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
@@ -194,13 +194,13 @@ class TestDeleteEndpoint(BaseRouteTestCase):
     def test_delete_endpoint(self):
         response = self.app.post(
             "/kml",
-            data=self.kml_string["valid"],
+            data=self.kml_dict["valid"],
             content_type="application/vnd.google-earth.kml+xml",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_string["valid"])
+        self.compare_kml_contents(response, self.kml_dict["valid"])
 
         id_to_delete = response.json['id']
 

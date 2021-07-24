@@ -1,0 +1,5 @@
+<root xmlns    = "https://www.updated.ch/"
+      xmlns:py = "https://www.updated.ch/">
+   <py:elem1 />
+   <elem2 xmlns="" />
+</root>

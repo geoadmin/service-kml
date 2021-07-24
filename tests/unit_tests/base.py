@@ -21,6 +21,26 @@ logger = logging.getLogger(__name__)
 class BaseRouteTestCase(unittest.TestCase):
 
     @classmethod
+    def get_kml_dict(cls):
+        kml_dict = {}
+
+        with open('./tests/samples/valid-kml.xml', 'r') as file:
+            valid_kml_string = file.read()
+        kml_dict["valid"] = valid_kml_string
+
+        with open('./tests/samples/invalid-kml.xml', 'r') as file:
+            invalid_kml_string = file.read()
+        kml_dict["invalid"] = invalid_kml_string
+
+        with open('./tests/samples/updated-kml.xml', 'r') as file:
+            updated_kml_string = file.read()
+        kml_dict["updated"] = updated_kml_string
+        return kml_dict
+
+    def create_test_kml(self):
+        pass
+
+    @classmethod
     def create_bucket(cls):
         '''Method that creates a mocked s3 bucket for unit testing'''
         try:
@@ -69,24 +89,7 @@ class BaseRouteTestCase(unittest.TestCase):
                 "Origin": "big-bad-wolf.com"
             }
         }
-        self.kml_string = {}
-        self.kml_string["valid"] = """<root xmlns    = "https://www.example.ch/"
-        xmlns:py = "https://www.example.ch/">
-        <py:elem1 />
-        <elem2 xmlns="" />
-        </root>"""
-
-        self.kml_string["invalid"] = """Hi <root xmlns    = "https://www.example.ch/"
-        xmlns:py = "https://www.example.ch/">
-        <py:elem1 />
-        <elem2 xmlns="" />
-        </root>"""
-
-        self.kml_string["updated"] = """<root xmlns    = "https://www.update.de/"
-        xmlns:py = "https://www.update.de/">
-        <py:elem1 />
-        <elem2 xmlns="" />
-        </root>"""
+        self.kml_dict = self.get_kml_dict()
         self.s3bucket = self.create_bucket()
         self.dynamodb = self.create_dynamodb()
 
