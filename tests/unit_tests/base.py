@@ -22,6 +22,14 @@ class BaseRouteTestCase(unittest.TestCase):
 
     @classmethod
     def get_kml_dict(cls):
+        '''Read the 3 kml strings from the 3 sample files
+
+        An example for a valid, an invalid and an updated kml string is provided in 3 sample files
+        in the ./tests/samples dir. These 3 files are stored in the kml_dict dictionary so they
+        can be easily used in unit tests.
+
+        Returns:
+            kml_dict: dictionary containing a valid, an invalid and an updated kml string.'''
         kml_dict = {}
 
         with open('./tests/samples/valid-kml.xml', 'r') as file:
@@ -38,11 +46,27 @@ class BaseRouteTestCase(unittest.TestCase):
         return kml_dict
 
     def create_test_kml(self):
-        pass
+        '''Method that creates a mocked s3 bucket for unit testing
+
+        An initial kml is created via a POST request and stored in the s3 bucket as well as in the
+        dynamo db. This initial kml will be used in unit tests, e.g. when a PUT is tested, it can
+        be applied to this initial kml, that is guaranteed to already exist.
+
+        Returns:
+            response.json: json containing the response of the POST request.'''
+        response = self.app.post(
+            "/kml",
+            data=self.kml_dict["valid"],
+            content_type="application/vnd.google-earth.kml+xml",
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.content_type, "application/json")
+        self.compare_kml_contents(response, self.kml_dict["valid"])
+        return response.json
 
     @classmethod
     def create_bucket(cls):
-        '''Method that creates a mocked s3 bucket for unit testing'''
         try:
             s3bucket = boto3.resource('s3', region_name=AWS_S3_REGION_NAME)
             location = {'LocationConstraint': AWS_S3_REGION_NAME}
@@ -56,7 +80,10 @@ class BaseRouteTestCase(unittest.TestCase):
 
     @classmethod
     def create_dynamodb(cls):
-        '''Method that creates a mocked DynamoDB for unit testing'''
+        '''Method that creates a mocked DynamoDB for unit testing
+
+        Returns:
+            dynamodb: dynamodb resource'''
         try:
             dynamodb = boto3.resource(
                 'dynamodb', region_name=AWS_DB_REGION_NAME, endpoint_url=AWS_DB_ENDPOINT_URL
@@ -92,6 +119,7 @@ class BaseRouteTestCase(unittest.TestCase):
         self.kml_dict = self.get_kml_dict()
         self.s3bucket = self.create_bucket()
         self.dynamodb = self.create_dynamodb()
+        self.sample_kml = self.create_test_kml()
 
     def compare_kml_contents(self, response, expected_kml):
         # pylint: disable=duplicate-code

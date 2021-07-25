@@ -3,7 +3,6 @@ import datetime
 import logging
 import uuid
 from datetime import timedelta
-from time import sleep
 
 from app.settings import AWS_DB_TABLE_NAME
 from app.version import APP_VERSION
@@ -66,25 +65,9 @@ class TestPostEndpoint(BaseRouteTestCase):
 class TestGetEndpoint(BaseRouteTestCase):
 
     def test_get_id(self):
-        # first step: create a kml file to retrieve
-        response = self.app.post(
-            "/kml",
-            data=self.kml_dict["valid"],
-            content_type="application/vnd.google-earth.kml+xml",
-            headers=self.origin_headers["allowed"]
-        )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_dict["valid"])
-
-        # second step : fetch the id
-
-        id_to_fetch = response.json['id']
-        stored_geoadmin_link = response.json['links']['kml']
-        stored_kml_admin_link = response.json['links']['self']
-
-        # third step : test the get id endpoint
-
+        id_to_fetch = self.sample_kml['id']
+        stored_geoadmin_link = self.sample_kml['links']['kml']
+        stored_kml_admin_link = self.sample_kml['links']['self']
         response = self.app.get(f"/kml/{id_to_fetch}", headers=self.origin_headers["allowed"])
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, "application/json")
@@ -94,7 +77,6 @@ class TestGetEndpoint(BaseRouteTestCase):
     def test_get_id_nonexistent(self):
         id_to_fetch = 'nonExistentId'
         response = self.app.get(f"kml/{id_to_fetch}", headers=self.origin_headers["allowed"])
-
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(
@@ -105,24 +87,7 @@ class TestGetEndpoint(BaseRouteTestCase):
 class TestPutEndpoint(BaseRouteTestCase):
 
     def test_valid_kml_put(self):
-
-        response_post = self.app.post(
-            "/kml",
-            data=self.kml_dict["valid"],
-            content_type="application/vnd.google-earth.kml+xml",
-            headers=self.origin_headers["allowed"]
-        )
-        self.assertEqual(response_post.status_code, 201)
-        self.assertEqual(response_post.content_type, "application/json")
-        self.compare_kml_contents(response_post, self.kml_dict["valid"])
-
-        # sleep 0.2 seconds between POST and PUT, in order to make the
-        # assertAlmostEqual below work, when comparing current time and
-        # "updated" time.
-        sleep(0.5)
-
-        id_to_put = response_post.json['id']
-
+        id_to_put = self.sample_kml['id']
         response = self.app.put(
             f'/kml/{id_to_put}',
             data=self.kml_dict["updated"],
@@ -131,11 +96,11 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, "application/json")
-        for key in response_post.json:
+        for key in self.sample_kml:
             # values for "updated" should and may differ, so ignore them in
             # this assertion
             if key != "updated":
-                self.assertEqual(response_post.json[key], response.json[key])
+                self.assertEqual(self.sample_kml[key], response.json[key])
 
         updated_item = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(Key={
             'admin_id': id_to_put
@@ -145,21 +110,10 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
-        self.compare_kml_contents(response_post, self.kml_dict["updated"])
+        self.compare_kml_contents(response, self.kml_dict["updated"])
 
     def test_invalid_kml_put(self):
-
-        response = self.app.post(
-            "/kml",
-            data=self.kml_dict["valid"],
-            content_type="application/vnd.google-earth.kml+xml",
-            headers=self.origin_headers["allowed"]
-        )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_dict["valid"])
-
-        id_to_put = response.json['id']
+        id_to_put = self.sample_kml['id']
 
         response = self.app.put(
             f'/kml/{id_to_put}',
