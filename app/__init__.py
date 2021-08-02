@@ -38,7 +38,7 @@ def add_cors_header(response):
         re.match(ALLOWED_DOMAINS_PATTERN, request.headers['Origin'])
     ):
         response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, OPTIONS'
+        response.headers['Access-Control-Allow-Methods'] = 'DELETE, GET, OPTIONS, POST, PUT'
     return response
 
 
