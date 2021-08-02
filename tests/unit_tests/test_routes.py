@@ -73,6 +73,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
+        self.compare_kml_contents(response, self.kml_dict["valid"])
 
     def test_get_id_nonexistent(self):
         id_to_fetch = 'nonExistentId'
