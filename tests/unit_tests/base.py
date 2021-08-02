@@ -31,18 +31,11 @@ class BaseRouteTestCase(unittest.TestCase):
         Returns:
             kml_dict: dictionary containing a valid, an invalid and an updated kml string.'''
         kml_dict = {}
+        for kml_sample in ["valid", "invalid", "updated"]:
+            with open(f'./tests/samples/{kml_sample}-kml.xml', 'r') as file:
+                kml_string = file.read()
+            kml_dict[kml_sample] = kml_string
 
-        with open('./tests/samples/valid-kml.xml', 'r') as file:
-            valid_kml_string = file.read()
-        kml_dict["valid"] = valid_kml_string
-
-        with open('./tests/samples/invalid-kml.xml', 'r') as file:
-            invalid_kml_string = file.read()
-        kml_dict["invalid"] = invalid_kml_string
-
-        with open('./tests/samples/updated-kml.xml', 'r') as file:
-            updated_kml_string = file.read()
-        kml_dict["updated"] = updated_kml_string
         return kml_dict
 
     def create_test_kml(self):
