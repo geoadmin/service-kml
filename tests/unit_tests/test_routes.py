@@ -83,6 +83,13 @@ class TestGetEndpoint(BaseRouteTestCase):
             response.json['error']['message'], f'Could not find {id_to_fetch} within the database.'
         )
 
+    def test_get_id_non_allowed_origin(self):
+        id_to_fetch = self.sample_kml['id']
+        response = self.app.get(f"/kml/{id_to_fetch}", headers=self.origin_headers["bad"])
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Not allowed")
+
 
 class TestPutEndpoint(BaseRouteTestCase):
 
@@ -142,10 +149,22 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.content_type, "application/json")
 
+    def test_valid_kml_put_non_allowed_origin(self):
+        id_to_put = self.sample_kml['id']
+        response = self.app.put(
+            f'/kml/{id_to_put}',
+            data=self.kml_dict["updated"],
+            content_type="application/vnd.google-earth.kml+xml",
+            headers=self.origin_headers["bad"]
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Not allowed")
+
 
 class TestDeleteEndpoint(BaseRouteTestCase):
 
-    def test_delete_endpoint(self):
+    def test_kml_delete(self):
         response = self.app.post(
             "/kml",
             data=self.kml_dict["valid"],
@@ -165,7 +184,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         response = self.app.get(f"/kml/{id_to_delete}", headers=self.origin_headers["allowed"])
         self.assertEqual(response.status_code, 404)
 
-    def test_delete_id_nonexistent(self):
+    def test_kml_delete_id_nonexistent(self):
         id_to_delete = 'nonExistentId'
         response = self.app.delete(f"kml/{id_to_delete}", headers=self.origin_headers["allowed"])
 
@@ -175,3 +194,21 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             response.json['error']['message'],
             f'Could not find {id_to_delete} within the database.'
         )
+
+    def test_kml_delete_non_allowed_origin(self):
+        response = self.app.post(
+            "/kml",
+            data=self.kml_dict["valid"],
+            content_type="application/vnd.google-earth.kml+xml",
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.content_type, "application/json")
+        self.compare_kml_contents(response, self.kml_dict["valid"])
+
+        id_to_delete = response.json['id']
+
+        response = self.app.delete(f"/kml/{id_to_delete}", headers=self.origin_headers["bad"])
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Not allowed")
