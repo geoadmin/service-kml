@@ -38,8 +38,19 @@ def add_cors_header(response):
         re.match(ALLOWED_DOMAINS_PATTERN, request.headers['Origin'])
     ):
         response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Methods'] = 'DELETE, GET, OPTIONS, POST, PUT'
     return response
+
+
+# Reject request from non allowed origins
+@app.before_request
+def validate_origin():
+    if 'Origin' not in request.headers:
+        logger.error('Origin header is not set')
+        abort(make_error_msg(403, 'Not allowed'))
+    if not re.match(ALLOWED_DOMAINS_PATTERN, request.headers['Origin']):
+        logger.error('Origin=%s is not allowed', request.headers['Origin'])
+        abort(make_error_msg(403, 'Not allowed'))
 
 
 @app.after_request

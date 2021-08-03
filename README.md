@@ -178,13 +178,13 @@ Here some curl examples
 
 ```bash
 # post a kml
-curl -X POST http://localhost:5000/kml --data "@./tests/samples/simple-kml.xml" -H "Content-Type: application/vnd.google-earth.kml+xml"
+curl -X POST http://localhost:5000/kml --data "@./tests/samples/valid-kml.xml" -H "Content-Type: application/vnd.google-earth.kml+xml"
 
 # get the kml metadata
 curl http://localhost:5000/kml/${KML_ID}
 
 # update the kml file
-curl -X PUT http://localhost:5000/kml/${KML_ID} --data "@./tests/samples/simple-kml.xml" -H "Content-Type: application/vnd.google-earth.kml+xml"
+curl -X PUT http://localhost:5000/kml/${KML_ID} --data "@./tests/samples/valid-kml.xml" -H "Content-Type: application/vnd.google-earth.kml+xml"
 
 # delete the kml
 curl -X DELETE http://localhost:5000/kml/${KML_ID}

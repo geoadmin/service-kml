@@ -14,11 +14,11 @@ class TestValidateKmlString(unittest.TestCase):
 
     def test_kml_string_wrong(self):
 
-        kml_string_w = """<root xmlns    = "https://www.exampel.ch/"</root>"""
+        kml_string_w = """<root xmlns    = "https://www.example.ch/"</root>"""
         kml = prevent_erroneous_kml(kml_string_w)
-        self.assertEqual(kml, """<root xmlns    = "https://www.exampel.ch/"</root>""")
+        self.assertEqual(kml, """<root xmlns    = "https://www.example.ch/"</root>""")
 
         kml_string_w = """<script asdf="sadf">
-        </script> <root xmlns    = "https://www.exampel.ch/"</root>"""
+        </script> <root xmlns    = "https://www.example.ch/"</root>"""
         kml = prevent_erroneous_kml(kml_string_w)
-        self.assertEqual(kml, '  <root xmlns    = "https://www.exampel.ch/"</root>')
+        self.assertEqual(kml, '  <root xmlns    = "https://www.example.ch/"</root>')
