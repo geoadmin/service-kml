@@ -41,7 +41,7 @@ PIP_FILE = Pipfile
 PIP_FILE_LOCK = Pipfile.lock
 
 # default configuration
-ENV_FILE ?= .env.local
+ENV_FILE ?= .env.default
 HTTP_PORT ?= 5000
 
 # Commands
@@ -72,13 +72,10 @@ help:
 	@echo "- format             Format the python source code"
 	@echo "- lint               Lint the python source code"
 	@echo "- format-lint        Format and lint the python source code"
-	@echo "- lint-spec          Lint the openapi spec"
 	@echo "- test               Run the tests"
 	@echo -e " \033[1mLOCAL SERVER TARGETS\033[0m "
 	@echo "- serve              Run the project using the flask debug server. Port can be set by Env variable HTTP_PORT (default: 5000)"
 	@echo "- gunicornserve      Run the project using the gunicorn WSGI server. Port can be set by Env variable DEBUG_HTTP_PORT (default: 5000)"
-	@echo "- serve-spec-redoc   Serve the spec using Redoc on localhost:8080"
-	@echo "- serve-spec-swagger Serve the spec using Swagger on localhost:8080/swagger"
 	@echo -e " \033[1mDocker TARGETS\033[0m "
 	@echo "- dockerlogin        Login to the AWS ECR registery for pulling/pushing docker images"
 	@echo "- dockerbuild        Build the project localy (with tag := $(DOCKER_IMG_LOCAL_TAG)) using the gunicorn WSGI server inside a container"
@@ -137,7 +134,6 @@ lint:
 format-lint: format lint
 
 
-
 # Test target
 
 .PHONY: test
@@ -150,12 +146,12 @@ test:
 
 .PHONY: serve
 serve: clean_logs $(LOGS_DIR)
-	LOGS_DIR=$(LOGS_DIR) FLASK_APP=service_launcher.py FLASK_DEBUG=1 $(FLASK) run --host=0.0.0.0 --port=$(HTTP_PORT)
+	ENV_FILE=$(ENV_FILE) LOGS_DIR=$(LOGS_DIR) FLASK_APP=service_launcher.py FLASK_DEBUG=1 $(FLASK) run --host=0.0.0.0 --port=$(HTTP_PORT)
 
 
 .PHONY: gunicornserve
 gunicornserve: clean_logs $(LOGS_DIR)
-	LOGS_DIR=$(LOGS_DIR) $(PYTHON) wsgi.py
+	ENV_FILE=$(ENV_FILE) LOGS_DIR=$(LOGS_DIR) $(PYTHON) wsgi.py
 
 
 # Docker related functions.
@@ -183,11 +179,11 @@ dockerpush: dockerbuild
 
 .PHONY: dockerrun
 dockerrun: clean_logs dockerbuild $(LOGS_DIR)
-	LOGS_DIR=/logs docker run \
+	docker run \
 		-it --rm --net=host \
 		--env-file=${PWD}/${ENV_FILE} \
 		--env LOGS_DIR=/logs \
-		--mount type=bind,source="$$(pwd)"/logs,target=/logs \
+		--mount type=bind,source="${LOGS_DIR}",target=/logs \
 		$(DOCKER_IMG_LOCAL_TAG)
 
 
@@ -213,29 +209,6 @@ clean: clean_venv clean_logs clean_vol_minio
 	rm -rf $(PYTHON_LOCAL_DIR)
 	rm -rf $(TEST_REPORT_DIR)
 	rm -rf $(TIMESTAMPS)
-
-
-# Spec targets
-
-.PHONY: lint-spec
-lint-spec:
-	docker run --volume "$(PWD)":/data jamescooke/openapi-validator -e openapi.yml
-
-
-.PHONY: serve-spec-redoc
-serve-spec-redoc:
-	docker run -it --rm -p 8080:80 \
-		-v "$(PWD)/openapi.yml":/usr/share/nginx/html/openapi.yml \
-		-e SPEC_URL=openapi.yml redocly/redoc
-
-
-.PHONY: serve-spec-swagger
-serve-spec-swagger:
-	echo "SWAGGER UI on http://localhost:8080/swagger"
-	docker run -p 8080:8080 \
-		-e BASE_URL=/swagger -e SWAGGER_JSON=/openapi.yaml \
-		-v ${PWD}/openapi.yml:/openapi.yaml \
-		swaggerapi/swagger-ui
 
 
 # Actual builds targets with dependencies

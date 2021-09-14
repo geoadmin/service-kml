@@ -63,7 +63,9 @@ def log_response(response):
         extra={
             'response':
                 {
-                    "status_code": response.status_code, "headers": dict(response.headers.items())
+                    "status_code": response.status_code,
+                    "headers": dict(response.headers.items()),
+                    "json": response.json
                 },
             "duration": time.time() - g.get('request_started', time.time())
         }

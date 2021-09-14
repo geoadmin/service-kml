@@ -1,8 +1,8 @@
-import base64
-import datetime
 import logging
-import uuid
-from urllib.parse import unquote_plus
+from base64 import urlsafe_b64encode
+from datetime import datetime
+from datetime import timezone
+from uuid import uuid4
 
 from flask import jsonify
 from flask import make_response
@@ -11,46 +11,59 @@ from flask import request
 from app import app
 from app.helpers.dynamodb import get_db
 from app.helpers.s3 import get_storage
+from app.helpers.utils import get_kml_file_link
+from app.helpers.utils import validate_content_length
 from app.helpers.utils import validate_content_type
-from app.helpers.utils import validate_kml_string
-from app.settings import KML_STORAGE_URL
+from app.helpers.utils import validate_kml_file
+from app.helpers.utils import validate_permissions
+from app.settings import KML_MAX_SIZE
+from app.settings import ROUTE_ADMIN_PREFIX
+from app.settings import ROUTE_BASE_PREFIX
+from app.settings import ROUTE_FILES_PREFIX
 from app.version import APP_VERSION
 
 logger = logging.getLogger(__name__)
 
 
-@app.route('/checker', methods=['GET'])
-def check():
+@app.route(f'/{ROUTE_BASE_PREFIX}/checker', methods=['GET'])
+def checker():
     return make_response(jsonify({'success': True, 'message': 'OK', 'version': APP_VERSION}))
 
 
-@app.route('/kml', methods=['POST'])
-@validate_content_type("application/vnd.google-earth.kml+xml")
-def post_kml():
-    # IE9 sends data urlencoded
-    quoted_str = request.get_data().decode('utf-8')
-    data = unquote_plus(quoted_str)
-    kml_string = validate_kml_string(data)
-    kml_admin_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
-    kml_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
-    timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
+# NOTE the /kml/files/<kml_id> route is directly served by S3
+
+
+@app.route(f'/{ROUTE_ADMIN_PREFIX}', methods=['POST'])
+@validate_content_type("multipart/form-data")
+@validate_content_length(KML_MAX_SIZE)
+def create_kml():
+    # Get the kml file data
+    kml_string, empty = validate_kml_file()
+
+    kml_admin_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
+    kml_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
+    file_key = f'{ROUTE_FILES_PREFIX}/{kml_id}'
+    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+
     storage = get_storage()
-    storage.upload_object_to_bucket(kml_id, kml_string)
-    db = get_db()  # pylint: disable=invalid-name
-    db.save_item(kml_admin_id, kml_id, timestamp)
-    item = db.get_item(kml_admin_id)
+    storage.upload_object_to_bucket(file_key, kml_string)
+
+    db = get_db()
+    db.save_item(kml_id, kml_admin_id, file_key, timestamp, empty)
 
     return make_response(
         jsonify(
             {
+                'id': kml_id,
+                'admin_id': kml_admin_id,
                 'success': True,
-                'id': kml_admin_id,
-                'created': item['created'],
-                'updated': item['updated'],
+                'created': timestamp,
+                'updated': timestamp,
+                'empty': empty,
                 'links':
                     {
-                        'self': f'{request.host_url}kml/{kml_admin_id}',
-                        'kml': f'{KML_STORAGE_URL}/{kml_id}'
+                        'self': f'{request.base_url}/{kml_id}',
+                        'kml': get_kml_file_link(file_key),
                     }
             }
         ),
@@ -58,84 +71,83 @@ def post_kml():
     )
 
 
-@app.route('/kml/<kml_admin_id>', methods=['GET'])
-def get_id(kml_admin_id):
-    db = get_db()  # pylint: disable=invalid-name
-    item = db.get_item(kml_admin_id)
-
+@app.route(f'/{ROUTE_ADMIN_PREFIX}/<kml_id>', methods=['GET'])
+def get_kml_metadata(kml_id):
+    item = get_db().get_item(kml_id)
     return make_response(
         jsonify(
             {
+                'id': kml_id,
                 'success': True,
-                'id': kml_admin_id,
                 'created': item['created'],
                 'updated': item['updated'],
-                'links':
-                    {
-                        'self': f'{request.host_url}kml/{item["admin_id"]}',
-                        'kml': f'{KML_STORAGE_URL}/{item["file_id"]}'
-                    }
+                'empty': item['empty'],
+                'links': {
+                    'self': request.base_url,
+                    'kml': get_kml_file_link(item['file_key']),
+                }
             }
         ),
         200
     )
 
 
-@app.route('/kml/<kml_admin_id>', methods=['PUT'])
-@validate_content_type("application/vnd.google-earth.kml+xml")
-def put_kml(kml_admin_id):
-    db = get_db()  # pylint: disable=invalid-name
-    item = db.get_item(kml_admin_id)
+@app.route(f'/{ROUTE_ADMIN_PREFIX}/<kml_id>', methods=['PUT'])
+@validate_content_type("multipart/form-data")
+@validate_content_length(KML_MAX_SIZE)
+def update_kml(kml_id):
+    db = get_db()
 
-    kml_id = item['file_id']
+    item = db.get_item(kml_id)
+    admin_id = validate_permissions(item)
 
-    quoted_str = request.get_data().decode('utf-8')
-    data = unquote_plus(quoted_str)
-    kml_string = validate_kml_string(data)
+    # Get the kml file data
+    kml_string, empty = validate_kml_file()
 
     storage = get_storage()
-    storage.upload_object_to_bucket(kml_id, kml_string)
+    storage.upload_object_to_bucket(item['file_key'], kml_string)
 
-    timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
-    db.update_item_timestamp(kml_admin_id, timestamp)
-    item = db.get_item(kml_admin_id)
+    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+    db.update_item(kml_id, timestamp, empty)
 
     return make_response(
         jsonify(
             {
+                'id': kml_id,
+                'admin_id': admin_id,
                 'success': True,
-                'id': kml_admin_id,
                 'created': item['created'],
-                'updated': item['updated'],
-                'links':
-                    {
-                        'self': f'{request.host_url}kml/{item["admin_id"]}',
-                        'kml': f'{KML_STORAGE_URL}/{item["file_id"]}'
-                    }
+                'updated': timestamp,
+                'empty': empty,
+                'links': {
+                    'self': request.base_url,
+                    'kml': get_kml_file_link(item['file_key']),
+                }
             }
         ),
         200
     )
 
 
-@app.route('/kml/<kml_admin_id>', methods=['DELETE'])
-def delete_id(kml_admin_id):
-    db = get_db()  # pylint: disable=invalid-name
-    item = db.get_item(kml_admin_id)
+@app.route(f'/{ROUTE_ADMIN_PREFIX}/<kml_id>', methods=['DELETE'])
+@validate_content_type("multipart/form-data")
+def delete_kml(kml_id):
+    db = get_db()
+    item = db.get_item(kml_id)
 
-    file_id = item['file_id']
+    validate_permissions(item)
 
     storage = get_storage()
-    storage.delete_file_in_bucket(file_id)
+    storage.delete_file_in_bucket(item['file_key'])
 
-    db.delete_item(kml_admin_id)
+    db.delete_item(kml_id)
 
     return make_response(
         jsonify(
             {
                 "success": True,
-                "id": kml_admin_id,
-                "message": f'The kml {item["admin_id"]} was successfully deleted.'
+                "id": kml_id,
+                "message": f'The kml {kml_id} was successfully deleted.'
             }
         ),
         200
