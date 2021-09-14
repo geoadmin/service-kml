@@ -7,6 +7,7 @@ from datetime import timedelta
 from flask import url_for
 
 from app.settings import AWS_DB_TABLE_NAME
+from app.settings import KML_FILE_CONTENT_TYPE
 from app.version import APP_VERSION
 from tests.unit_tests.base import BaseRouteTestCase
 from tests.unit_tests.base import prepare_kml_payload
@@ -63,7 +64,7 @@ class TestPostEndpoint(BaseRouteTestCase):
         response = self.app.post(
             url_for('create_kml'),
             data=prepare_kml_payload(self.kml_dict["valid"]),
-            content_type="application/vnd.google-earth.kml+xml",
+            content_type=KML_FILE_CONTENT_TYPE,
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 415)

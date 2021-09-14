@@ -15,6 +15,7 @@ from flask import jsonify
 from flask import make_response
 from flask import request
 
+from app.settings import KML_FILE_CONTENT_TYPE
 from app.settings import KML_STORAGE_HOST_URL
 
 logger = logging.getLogger(__name__)
@@ -26,8 +27,6 @@ ALLOWED_DOMAINS = [
 ]
 
 ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))
-
-EXPECTED_KML_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
 
 
 def make_error_msg(code, msg):
@@ -147,10 +146,11 @@ def validate_kml_file():
         logger.error('KML file missing in request')
         abort(400, 'KML file missing in request')
     file = request.files['kml']
-    if file.mimetype != 'application/vnd.google-earth.kml+xml':
+    if file.mimetype != KML_FILE_CONTENT_TYPE:
         logger.error(
-            'Unsupported KML media type %s; only application/vnd.google-earth.kml+xml is allowed',
-            file.mimetype
+            'Unsupported KML media type %s; only %s is allowed',
+            file.mimetype,
+            KML_FILE_CONTENT_TYPE
         )
         abort(415, "Unsupported KML media type")
     if 'charset' in file.mimetype_params:

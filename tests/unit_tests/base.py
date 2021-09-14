@@ -15,6 +15,7 @@ from app.settings import AWS_DB_REGION_NAME
 from app.settings import AWS_DB_TABLE_NAME
 from app.settings import AWS_S3_BUCKET_NAME
 from app.settings import AWS_S3_REGION_NAME
+from app.settings import KML_FILE_CONTENT_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -78,9 +79,7 @@ def create_dynamodb():
     return dynamodb
 
 
-def prepare_kml_payload(
-    kml_string=None, admin_id=None, content_type='application/vnd.google-earth.kml+xml'
-):
+def prepare_kml_payload(kml_string=None, admin_id=None, content_type=KML_FILE_CONTENT_TYPE):
     if admin_id and kml_string:
         return dict(
             admin_id=admin_id,

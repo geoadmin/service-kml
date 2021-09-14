@@ -23,3 +23,5 @@ ROUTE_FILES_PREFIX = f'{ROUTE_BASE_PREFIX}/files'
 
 MB = 1024 * 1024
 KML_MAX_SIZE = int(os.getenv('KML_MAX_SIZE', str(2 * MB)))
+
+KML_FILE_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'

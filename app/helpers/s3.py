@@ -14,6 +14,7 @@ from botocore.exceptions import EndpointConnectionError
 from app.settings import AWS_S3_BUCKET_NAME
 from app.settings import AWS_S3_ENDPOINT_URL
 from app.settings import AWS_S3_REGION_NAME
+from app.settings import KML_FILE_CONTENT_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,12 @@ class S3FileHandling:
     def upload_object_to_bucket(self, file_key, data):
         logger.debug("Uploading file %s to bucket %s.", file_key, AWS_S3_BUCKET_NAME)
         try:
-            response = self.s3.put_object(Body=data, Bucket=AWS_S3_BUCKET_NAME, Key=file_key)
+            response = self.s3.put_object(
+                Body=data,
+                Bucket=AWS_S3_BUCKET_NAME,
+                Key=file_key,
+                ContentType=KML_FILE_CONTENT_TYPE
+            )
         except EndpointConnectionError as error:
             logger.exception('Failed to connect to S3: %s', error)
             abort(502, 'Backend file storage connection error, please consult logs')
