@@ -47,10 +47,10 @@ def add_cors_header(response):
 def validate_origin():
     if 'Origin' not in request.headers:
         logger.error('Origin header is not set')
-        abort(make_error_msg(403, 'Not allowed'))
+        abort(403, 'Permission denied')
     if not re.match(ALLOWED_DOMAINS_PATTERN, request.headers['Origin']):
         logger.error('Origin=%s is not allowed', request.headers['Origin'])
-        abort(make_error_msg(403, 'Not allowed'))
+        abort(403, 'Permission denied')
 
 
 @app.after_request
@@ -63,7 +63,9 @@ def log_response(response):
         extra={
             'response':
                 {
-                    "status_code": response.status_code, "headers": dict(response.headers.items())
+                    "status_code": response.status_code,
+                    "headers": dict(response.headers.items()),
+                    "json": response.json
                 },
             "duration": time.time() - g.get('request_started', time.time())
         }

@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent
-ENV_FILE = os.getenv('ENV_FILE', f'{BASE_DIR}/.env.default')
+ENV_FILE = os.getenv('ENV_FILE', None)
 if ENV_FILE:
     from dotenv import load_dotenv
 
@@ -15,4 +15,13 @@ AWS_S3_ENDPOINT_URL = os.getenv('AWS_S3_ENDPOINT_URL', None)
 AWS_DB_REGION_NAME = os.environ['AWS_DB_REGION_NAME']
 AWS_DB_TABLE_NAME = os.environ['AWS_DB_TABLE_NAME']
 AWS_DB_ENDPOINT_URL = os.getenv('AWS_DB_ENDPOINT_URL', None)
-KML_STORAGE_URL = os.getenv('KML_STORAGE_URL')
+KML_STORAGE_HOST_URL = os.getenv('KML_STORAGE_HOST_URL', None)
+
+ROUTE_BASE_PREFIX = 'api/kml'
+ROUTE_ADMIN_PREFIX = f'{ROUTE_BASE_PREFIX}/admin'
+ROUTE_FILES_PREFIX = f'{ROUTE_BASE_PREFIX}/files'
+
+MB = 1024 * 1024
+KML_MAX_SIZE = int(os.getenv('KML_MAX_SIZE', str(2 * MB)))
+
+KML_FILE_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'

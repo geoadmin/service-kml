@@ -9,10 +9,7 @@
 
 - [Table of content](#table-of-content)
 - [Description](#description)
-  - [Staging Environments](#staging-environments)
-  - [POST](#post)
-  - [GET](#get)
-  - [PUT](#put)
+- [Staging Environments](#staging-environments)
 - [Versioning](#versioning)
 - [Local Development](#local-development)
   - [Make Dependencies](#make-dependencies)
@@ -27,43 +24,15 @@
 ## Description
 
 A Microservice which stores drawings that are created in the mapviewer on s3.
-A detailed descriptions of the endpoints can be found in the [OpenAPI Spec](openapi.yaml).
+A detailed descriptions of the endpoints can be found in the [OpenAPI Spec](https://github.com/geoadmin/doc-api-specs/blob/develop/public.geo.admin.ch/public.geo.admin.ch.yaml).
 
-### Staging Environments
-
-This service has three endpoints:
-
-- POST/kml
-- GET/kml/{id}
-- PUT/kml/{id}
+## Staging Environments
 
 | Environments | URL                                                                                                                   |
 | ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| DEV          | [https://service-kml.bgdi-dev.swisstopo.cloud/v4/name/](https://service-kml.bgdi-dev.swisstopo.cloud/v4/name/)  |
-| INT          | [https://service-kml.bgdi-int.swisstopo.cloud/v4/name/](https://service-kml.bgdi-int.swisstopo.cloud/v4/name/)  |
-| PROD         | [https://service-kml.bgdi-prod.swisstopo.cloud/v4/name/](https://service-kml.bgdi-int.swisstopo.cloud/v4/name/) |
-
-### POST
-
-Payload is the kml drawn in the map.
-
-| Path | Method | Content Type | Refer | Response Type|
-|------|--------|--------------|-------|--------------|
-| /kml | POST | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
-
-### GET
-
-| Path | Method | Response Type|
-|------|--------|--------------|
-| /kml/<id> | GET | application/vnd.google-earth.kml+xml |
-
-### PUT
-
-Payload is the kml to update.
-
-| Path | Method | Content Type | Refer | Response Type|
-|------|--------|--------------|-------|--------------|
-| /kml/<id> | PUT | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
+| DEV          | [https://service-kml.bgdi-dev.swisstopo.cloud/api/kml/](https://service-kml.bgdi-dev.swisstopo.cloud/api/kml/)  |
+| INT          | [https://service-kml.bgdi-int.swisstopo.cloud/api/kml/](https://service-kml.bgdi-int.swisstopo.cloud/api/kml/)  |
+| PROD         | [https://service-kml.bgdi-prod.swisstopo.cloud/api/kml/](https://service-kml.bgdi-int.swisstopo.cloud/api/kml/) |
 
 ## Versioning
 
@@ -85,7 +54,7 @@ First, you'll need to clone the repo
 git clone git@github.com:geoadmin/service-kml
 ```
 
-create and adapt your local copy of .env.default to your needs.
+If needed create and adapt your local copy of .env.default to your needs.
 Afterwards source it (otherwise default values will be used by the service) and
 let ENV_FILE point to your local env file:
 
@@ -95,10 +64,10 @@ source .env.local
 export ENV_FILE=.env.local
 ```
 
-Then, you can run the setup target to ensure you have everything needed to develop, test and serve locally
+Then, you can run the dev target to ensure you have everything needed to develop, test and serve locally
 
 ```bash
-make setup
+make dev
 ```
 
 The other services that are used (DynamoDB local and [MinIO](https://www.min.io) as local S3 replacement) are wrapped in a docker compose.
@@ -109,9 +78,10 @@ Starting DynamoDB local and MinIO is done with a simple
 docker-compose up
 ```
 
-in the source root folder. Make sure to run `make setup` before to ensure the necessary folders `.volumes/*` are in place. These folders are mounted in the services and allow data persistency over restarts of the containers.
+in the source root folder. Make sure to run `make dev` before to ensure the necessary folders `.volumes/*` are in place. These folders are mounted in the services and allow data persistency over restarts of the containers.
 
 That's it, you're ready to work.
+
 ### Linting and formatting your work
 
 In order to have a consistent code style the code should be formatted using `yapf`. Also to avoid syntax errors and non
@@ -145,18 +115,6 @@ This will serve the application through Flask without any wsgi in front.
 make gunicornserve
 ```
 
-This will serve the application with the Gunicorn layer in front of the application
-
-```bash
-make serve-spec-redoc
-```
-
-This serve the spec using Redoc on localhost:8080
-
-```bash
-make serve-spec-swagger 
-```
-
 This serve the spec using Swagger on localhost:8080/swagger
 
 ```bash
@@ -178,16 +136,16 @@ Here some curl examples
 
 ```bash
 # post a kml
-curl -X POST http://localhost:5000/kml --data "@./tests/samples/valid-kml.xml" -H "Content-Type: application/vnd.google-earth.kml+xml"
+curl -X POST http://localhost:5000/api/kml/admin -F kml="@./tests/samples/valid-kml.xml; type=application/vnd.google-earth.kml+xml" -H "Origin: map.geo.admin.ch"
 
 # get the kml metadata
-curl http://localhost:5000/kml/${KML_ID}
+curl http://localhost:5000/api/kml/admin/${KML_ID} -H "Origin: map.geo.admin.ch"
 
 # update the kml file
-curl -X PUT http://localhost:5000/kml/${KML_ID} --data "@./tests/samples/valid-kml.xml" -H "Content-Type: application/vnd.google-earth.kml+xml"
+curl -X PUT http://localhost:5000/api/kml/admin/${KML_ID} -F admin_id=${ADMIN_ID} -F kml="@./tests/samples/updated-kml.xml; type=application/vnd.google-earth.kml+xml" -H "Origin: map.geo.admin.ch"
 
 # delete the kml
-curl -X DELETE http://localhost:5000/kml/${KML_ID}
+curl -X DELETE http://localhost:5000/api/kml/admin/${KML_ID} -F admin_id=${ADMIN_ID} -H "Origin: map.geo.admin.ch"
 ```
 
 ### Docker helpers
@@ -249,3 +207,11 @@ The service is configured by Environment Variable:
 | Env         | Default               | Description                |
 | ----------- | --------------------- | -------------------------- |
 | LOGGING_CFG | logging-cfg-local.yml | Logging configuration file |
+| AWS_S3_BUCKET_NAME | | AWS S3 bucket name used to save and serve KML files |
+| AWS_S3_REGION_NAME | | AWS region name of the S3 service |
+| AWS_S3_ENDPOINT_URL | `None` | AWS S3 Endpoint URL. This can be used to use another S3 service as the one from AWS (e.g. local minio) |
+| AWS_DB_REGION_NAME | | AWS DynamoDB region name |
+| AWS_DB_TABLE_NAME | | AWS DynamoDB table name |
+| AWS_DB_ENDPOINT_URL | `None` | AWS DynamoDB Endpoint URL. This can be used to use another DynamoDB service as the one from AWS (e.g. local DynamoDB) |
+| KML_STORAGE_HOST_URL | `None` | KML storage host. This can be used if the S3 storage is not on the same host as the service (e.g. local development where service runs on `localhost:5000` and storage on `localhost:9090` |
+| KML_MAX_SIZE | `2 * 1024 * 1024` | KML max size file allowed in bytes |

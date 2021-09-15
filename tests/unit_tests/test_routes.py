@@ -4,9 +4,13 @@ import logging
 import uuid
 from datetime import timedelta
 
+from flask import url_for
+
 from app.settings import AWS_DB_TABLE_NAME
+from app.settings import KML_FILE_CONTENT_TYPE
 from app.version import APP_VERSION
 from tests.unit_tests.base import BaseRouteTestCase
+from tests.unit_tests.base import prepare_kml_payload
 
 logger = logging.getLogger(__name__)
 
@@ -14,36 +18,31 @@ logger = logging.getLogger(__name__)
 class CheckerTests(BaseRouteTestCase):
 
     def test_checker(self):
-        response = self.app.get("/checker", headers=self.origin_headers["allowed"])
+        response = self.app.get(url_for('checker'), headers=self.origin_headers["allowed"])
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json, {"message": "OK", "success": True, "version": APP_VERSION})
 
     def test_checker_non_allowed_origin(self):
-        response = self.app.get("/checker", headers=self.origin_headers["bad"])
+        response = self.app.get(url_for('checker'), headers=self.origin_headers["bad"])
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
 
 class TestPostEndpoint(BaseRouteTestCase):
 
     def test_valid_kml_post(self):
-        response = self.app.post(
-            "/kml",
-            data=self.kml_dict["valid"],
-            content_type="application/vnd.google-earth.kml+xml",
-            headers=self.origin_headers["allowed"]
-        )
+        response = self.create_test_kml()
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
         self.compare_kml_contents(response, self.kml_dict["valid"])
 
     def test_invalid_kml_post(self):
         response = self.app.post(
-            "/kml",
-            data=self.kml_dict["invalid"],
-            content_type="application/vnd.google-earth.kml+xml",
+            url_for('create_kml'),
+            data=prepare_kml_payload(self.kml_dict["invalid"]),
+            content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 400)
@@ -52,44 +51,71 @@ class TestPostEndpoint(BaseRouteTestCase):
 
     def test_valid_kml_post_non_allowed_origin(self):
         response = self.app.post(
-            "/kml",
-            data=self.kml_dict["valid"],
-            content_type="application/vnd.google-earth.kml+xml",
+            url_for('create_kml'),
+            data=prepare_kml_payload(self.kml_dict["valid"]),
+            content_type="multipart/form-data",
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
+
+    def test_kml_post_invalid_content_type(self):
+        response = self.app.post(
+            url_for('create_kml'),
+            data=prepare_kml_payload(self.kml_dict["valid"]),
+            content_type=KML_FILE_CONTENT_TYPE,
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 415)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Unsupported Media Type")
+
+        response = self.app.post(
+            url_for('create_kml'),
+            data=prepare_kml_payload(self.kml_dict["valid"], content_type='application/json'),
+            content_type="multipart/form-data",
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 415)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Unsupported KML media type")
 
 
 class TestGetEndpoint(BaseRouteTestCase):
 
-    def test_get_id(self):
+    def test_get_metadata(self):
         id_to_fetch = self.sample_kml['id']
         stored_geoadmin_link = self.sample_kml['links']['kml']
         stored_kml_admin_link = self.sample_kml['links']['self']
-        response = self.app.get(f"/kml/{id_to_fetch}", headers=self.origin_headers["allowed"])
+        response = self.app.get(
+            url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["allowed"]
+        )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
         self.compare_kml_contents(response, self.kml_dict["valid"])
 
-    def test_get_id_nonexistent(self):
+    def test_get_metadata_nonexistent(self):
         id_to_fetch = 'nonExistentId'
-        response = self.app.get(f"kml/{id_to_fetch}", headers=self.origin_headers["allowed"])
+        response = self.app.get(
+            url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["allowed"]
+        )
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(
             response.json['error']['message'], f'Could not find {id_to_fetch} within the database.'
         )
 
-    def test_get_id_non_allowed_origin(self):
+    def test_get_metadata_non_allowed_origin(self):
         id_to_fetch = self.sample_kml['id']
-        response = self.app.get(f"/kml/{id_to_fetch}", headers=self.origin_headers["bad"])
+        response = self.app.get(
+            url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["bad"]
+        )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
 
 class TestPutEndpoint(BaseRouteTestCase):
@@ -97,9 +123,11 @@ class TestPutEndpoint(BaseRouteTestCase):
     def test_valid_kml_put(self):
         id_to_put = self.sample_kml['id']
         response = self.app.put(
-            f'/kml/{id_to_put}',
-            data=self.kml_dict["updated"],
-            content_type="application/vnd.google-earth.kml+xml",
+            url_for('update_kml', kml_id=id_to_put),
+            data=prepare_kml_payload(
+                self.kml_dict["updated"], admin_id=self.sample_kml['admin_id']
+            ),
+            content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 200)
@@ -111,7 +139,7 @@ class TestPutEndpoint(BaseRouteTestCase):
                 self.assertEqual(self.sample_kml[key], response.json[key])
 
         updated_item = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(Key={
-            'admin_id': id_to_put
+            'kml_id': id_to_put
         }).get('Item', None)
         self.assertAlmostEqual(
             datetime.datetime.fromisoformat(updated_item["updated"]).replace(tzinfo=None),
@@ -124,9 +152,11 @@ class TestPutEndpoint(BaseRouteTestCase):
         id_to_put = self.sample_kml['id']
 
         response = self.app.put(
-            f'/kml/{id_to_put}',
-            data=self.kml_dict["invalid"],
-            content_type="application/vnd.google-earth.kml+xml",
+            url_for('update_kml', kml_id=id_to_put),
+            data=prepare_kml_payload(
+                self.kml_dict["invalid"], admin_id=self.sample_kml['admin_id']
+            ),
+            content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 400)
@@ -138,9 +168,11 @@ class TestPutEndpoint(BaseRouteTestCase):
         id_to_update = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
 
         response = self.app.put(
-            f'/kml/{id_to_update}',
-            data=self.kml_dict["updated"],
-            content_type="application/vnd.google-earth.kml+xml",
+            url_for('update_kml', kml_id=id_to_update),
+            data=prepare_kml_payload(
+                self.kml_dict["updated"], admin_id=self.sample_kml['admin_id']
+            ),
+            content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 404)
@@ -153,41 +185,75 @@ class TestPutEndpoint(BaseRouteTestCase):
     def test_valid_kml_put_non_allowed_origin(self):
         id_to_put = self.sample_kml['id']
         response = self.app.put(
-            f'/kml/{id_to_put}',
-            data=self.kml_dict["updated"],
-            content_type="application/vnd.google-earth.kml+xml",
+            url_for('update_kml', kml_id=id_to_put),
+            data=prepare_kml_payload(
+                self.kml_dict["updated"], admin_id=self.sample_kml['admin_id']
+            ),
+            content_type="multipart/form-data",
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
+
+    def test_valid_kml_put_non_allowed_admin_id(self):
+        id_to_put = self.sample_kml['id']
+        response = self.app.put(
+            url_for('update_kml', kml_id=id_to_put),
+            data=prepare_kml_payload(self.kml_dict["updated"], admin_id='invalid-id'),
+            content_type="multipart/form-data",
+            headers=self.origin_headers["bad"]
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
+
+    def test_valid_kml_put_missing_admin_id(self):
+        id_to_put = self.sample_kml['id']
+        response = self.app.put(
+            url_for('update_kml', kml_id=id_to_put),
+            data=prepare_kml_payload(self.kml_dict["updated"]),
+            content_type="multipart/form-data",
+            headers=self.origin_headers["bad"]
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
 
 class TestDeleteEndpoint(BaseRouteTestCase):
 
     def test_kml_delete(self):
-        response = self.app.post(
-            "/kml",
-            data=self.kml_dict["valid"],
-            content_type="application/vnd.google-earth.kml+xml",
+        id_to_delete = self.sample_kml['id']
+
+        # retrieve the file_key for later check
+        item = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(Key={'kml_id': id_to_delete})['Item']
+
+        response = self.app.delete(
+            url_for('delete_kml', kml_id=id_to_delete),
+            content_type='multipart/form-data',
+            data=dict(admin_id=self.sample_kml['admin_id']),
             headers=self.origin_headers["allowed"]
         )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_dict["valid"])
-
-        id_to_delete = response.json['id']
-
-        response = self.app.delete(f"/kml/{id_to_delete}", headers=self.origin_headers["allowed"])
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content_type, "application/json")
 
-        response = self.app.get(f"/kml/{id_to_delete}", headers=self.origin_headers["allowed"])
+        response = self.app.get(
+            f"/kml/admin/{id_to_delete}", headers=self.origin_headers["allowed"]
+        )
         self.assertEqual(response.status_code, 404)
+
+        # Make sure the file is deleted on S3
+        file = self.get_s3_object(item['file_key'])
+        self.assertIsNone(file, msg='kml file not deleted on S3')
 
     def test_kml_delete_id_nonexistent(self):
         id_to_delete = 'nonExistentId'
-        response = self.app.delete(f"kml/{id_to_delete}", headers=self.origin_headers["allowed"])
+        response = self.app.delete(
+            url_for('delete_kml', kml_id=id_to_delete),
+            content_type='multipart/form-data',
+            headers=self.origin_headers["allowed"]
+        )
 
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.content_type, "application/json")
@@ -197,19 +263,52 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         )
 
     def test_kml_delete_non_allowed_origin(self):
-        response = self.app.post(
-            "/kml",
-            data=self.kml_dict["valid"],
-            content_type="application/vnd.google-earth.kml+xml",
-            headers=self.origin_headers["allowed"]
+        id_to_delete = self.sample_kml['id']
+
+        response = self.app.delete(
+            url_for('delete_kml', kml_id=id_to_delete),
+            data=dict(admin_id=self.sample_kml['admin_id']),
+            content_type='multipart/form-data',
+            headers=self.origin_headers["bad"]
         )
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_dict["valid"])
-
-        id_to_delete = response.json['id']
-
-        response = self.app.delete(f"/kml/{id_to_delete}", headers=self.origin_headers["bad"])
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
+
+    def test_kml_delete_non_allowed_admin_id(self):
+        id_to_delete = self.sample_kml['id']
+
+        response = self.app.delete(
+            url_for('delete_kml', kml_id=id_to_delete),
+            content_type='multipart/form-data',
+            data=dict(admin_id='invalid-id'),
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
+
+    def test_kml_delete_missing_admin_id(self):
+        id_to_delete = self.sample_kml['id']
+
+        response = self.app.delete(
+            url_for('delete_kml', kml_id=id_to_delete),
+            content_type='multipart/form-data',
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
+
+    def test_kml_delete_wrong_content_type(self):
+        id_to_delete = self.sample_kml['id']
+
+        response = self.app.delete(
+            url_for('delete_kml', kml_id=id_to_delete),
+            content_type='application/json',
+            data=dict(admin_id=self.sample_kml['admin_id']),
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 415)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(response.json["error"]["message"], "Unsupported Media Type")

@@ -14,6 +14,7 @@ from botocore.exceptions import EndpointConnectionError
 from app.settings import AWS_S3_BUCKET_NAME
 from app.settings import AWS_S3_ENDPOINT_URL
 from app.settings import AWS_S3_REGION_NAME
+from app.settings import KML_FILE_CONTENT_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -43,38 +44,43 @@ class S3FileHandling:
     def __init__(self, region, endpoint_url):
         self.s3 = get_s3_client(region, endpoint_url)  # pylint: disable=invalid-name
 
-    def get_file_from_bucket(self, file_id):
+    def get_file_from_bucket(self, file_key):
         # pylint: disable=duplicate-code
         try:
-            response = self.s3.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=file_id)
+            response = self.s3.get_object(Bucket=AWS_S3_BUCKET_NAME, Key=file_key)
         except EndpointConnectionError as error:
             logger.exception('Failed to connect to S3: %s', error)
             abort(502, 'Backend file storage connection error, please consult logs')
         except ClientError as error:
             if error.response['Error']['Code'] == "NoSuchKey":
-                logger.exception('Object with the given key %s not found in s3 bucket.', file_id)
-                abort(404, f'Object with the given key {file_id} not found in s3 bucket.')
+                logger.exception('Object with the given key %s not found in s3 bucket.', file_key)
+                abort(404, f'Object with the given key {file_key} not found in s3 bucket.')
         # pylint: enable=duplicate-code
         return response
 
-    def delete_file_in_bucket(self, file_id):
+    def delete_file_in_bucket(self, file_key):
         try:
-            response = self.s3.delete_object(Bucket=AWS_S3_BUCKET_NAME, Key=file_id)
+            response = self.s3.delete_object(Bucket=AWS_S3_BUCKET_NAME, Key=file_key)
         except HTTPError as error:
             if error == 400:
-                logger.warning("Can not delete file %s. The file is already deleted.", file_id)
+                logger.warning("Can not delete file %s. The file is already deleted.", file_key)
             else:
-                logger.error("Could not delete the kml %s: %s", file_id, error)
+                logger.error("Could not delete the kml %s: %s", file_key, error)
                 raise
         except EndpointConnectionError as error:
             logger.exception('Failed to connect to S3: %s', error)
             abort(502, 'Backend file storage connection error, please consult logs')
         return response
 
-    def upload_object_to_bucket(self, file_id, data):
-        logger.debug("Uploading file %s to bucket %s.", file_id, AWS_S3_BUCKET_NAME)
+    def upload_object_to_bucket(self, file_key, data):
+        logger.debug("Uploading file %s to bucket %s.", file_key, AWS_S3_BUCKET_NAME)
         try:
-            response = self.s3.put_object(Body=data, Bucket=AWS_S3_BUCKET_NAME, Key=file_id)
+            response = self.s3.put_object(
+                Body=data,
+                Bucket=AWS_S3_BUCKET_NAME,
+                Key=file_key,
+                ContentType=KML_FILE_CONTENT_TYPE
+            )
         except EndpointConnectionError as error:
             logger.exception('Failed to connect to S3: %s', error)
             abort(502, 'Backend file storage connection error, please consult logs')
