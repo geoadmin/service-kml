@@ -164,4 +164,4 @@ def validate_kml_file():
 def get_kml_file_link(file_key):
     if KML_STORAGE_HOST_URL:
         return f'{KML_STORAGE_HOST_URL}/{file_key}'
-    return f'{request.host_url}/{file_key}'
+    return f'{request.host_url}{file_key}'

@@ -27,7 +27,7 @@ class CheckerTests(BaseRouteTestCase):
         response = self.app.get(url_for('checker'), headers=self.origin_headers["bad"])
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
 
 class TestPostEndpoint(BaseRouteTestCase):
@@ -58,7 +58,7 @@ class TestPostEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
     def test_kml_post_invalid_content_type(self):
         response = self.app.post(
@@ -115,7 +115,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
 
 class TestPutEndpoint(BaseRouteTestCase):
@@ -194,7 +194,7 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
     def test_valid_kml_put_non_allowed_admin_id(self):
         id_to_put = self.sample_kml['id']
@@ -206,7 +206,7 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
     def test_valid_kml_put_missing_admin_id(self):
         id_to_put = self.sample_kml['id']
@@ -218,7 +218,7 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
 
 class TestDeleteEndpoint(BaseRouteTestCase):
@@ -273,7 +273,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         )
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(response.json["error"]["message"], "Not allowed")
+        self.assertEqual(response.json["error"]["message"], "Permission denied")
 
     def test_kml_delete_non_allowed_admin_id(self):
         id_to_delete = self.sample_kml['id']
