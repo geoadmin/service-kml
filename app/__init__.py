@@ -9,9 +9,9 @@ from flask import abort
 from flask import g
 from flask import request
 
-from app.helpers.utils import ALLOWED_DOMAINS_PATTERN
 from app.helpers.utils import make_error_msg
 from app.middleware import ReverseProxy
+from app.settings import ALLOWED_DOMAINS_PATTERN
 
 logger = logging.getLogger(__name__)
 

@@ -20,14 +20,6 @@ from app.settings import KML_STORAGE_HOST_URL
 
 logger = logging.getLogger(__name__)
 
-ALLOWED_DOMAINS = [
-    r'.*\.geo\.admin\.ch',
-    r'.*bgdi\.ch',
-    r'.*\.swisstopo\.cloud',
-]
-
-ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))
-
 
 def make_error_msg(code, msg):
     return make_response(jsonify({'success': False, 'error': {'code': code, 'message': msg}}), code)
