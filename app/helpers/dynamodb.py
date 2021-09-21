@@ -3,11 +3,11 @@ import logging
 from flask import abort
 from flask import g
 
-import boto3
+from boto3 import resource
+from boto3.dynamodb.conditions import Key
 
 from botocore.client import Config
 from botocore.exceptions import EndpointConnectionError
-from boto3.dynamodb.conditions import Key
 
 from app.settings import AWS_DB_ENDPOINT_URL
 from app.settings import AWS_DB_REGION_NAME
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_dynamodb_resource(region, endpoint_url):
-    return boto3.resource('dynamodb', endpoint_url=endpoint_url, config=Config(region_name=region))
+    return resource('dynamodb', endpoint_url=endpoint_url, config=Config(region_name=region))
 
 
 def get_db():
@@ -40,7 +40,7 @@ class DynamoDBFilesHandler:
         self.bucket_name = bucket_name
         self.endpoint = endpoint_url
 
-    def save_item(self, kml_id, kml_admin_id, file_key, timestamp, empty=False):
+    def save_item(self, kml_id, kml_admin_id, file_key, timestamp, empty=False, author=''):
         try:
             self.table.put_item(
                 Item={
@@ -50,7 +50,8 @@ class DynamoDBFilesHandler:
                     'updated': timestamp,
                     'bucket': self.bucket_name,
                     'file_key': file_key,
-                    'empty': empty
+                    'empty': empty,
+                    'author': author
                 }
             )
         except EndpointConnectionError as error:
