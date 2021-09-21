@@ -4,9 +4,11 @@ from datetime import datetime
 from datetime import timezone
 from uuid import uuid4
 
+from flask import abort
 from flask import jsonify
 from flask import make_response
 from flask import request
+from flask.helpers import url_for
 
 from app import app
 from app.helpers.dynamodb import get_db
@@ -68,6 +70,33 @@ def create_kml():
             }
         ),
         201
+    )
+
+
+@app.route(f'/{ROUTE_ADMIN_PREFIX}', methods=['GET'])
+def get_kml_metadata_by_admin_id():
+    admin_id = request.args.get('admin_id')
+    if not admin_id:
+        logger.error("Query parameter admin_id is required: query=%s", request.args)
+        abort(400, "Query parameter admin_id is required")
+    item = get_db().get_item_by_admin_id(admin_id)
+    return make_response(
+        jsonify(
+            {
+                'id': item['kml_id'],
+                'admin_id': admin_id,
+                'success': True,
+                'created': item['created'],
+                'updated': item['updated'],
+                'empty': item['empty'],
+                'links':
+                    {
+                        'self': url_for('get_kml_metadata', kml_id=item['kml_id'], _external=True),
+                        'kml': get_kml_file_link(item['file_key']),
+                    }
+            }
+        ),
+        200
     )
 
 

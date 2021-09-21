@@ -97,6 +97,46 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
         self.compare_kml_contents(response, self.kml_dict["valid"])
 
+    def test_get_metadata_by_admin_id(self):
+        admin_id = self.sample_kml['admin_id']
+        stored_geoadmin_link = self.sample_kml['links']['kml']
+        stored_kml_admin_link = self.sample_kml['links']['self']
+        response = self.app.get(
+            url_for('get_kml_metadata_by_admin_id', admin_id=admin_id),
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 200, msg=f'Request failed: {response.json}')
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
+        self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
+        self.compare_kml_contents(response, self.kml_dict["valid"])
+
+    def test_get_metadata_by_admin_id_invalid(self):
+        response = self.app.get(
+            url_for('get_kml_metadata_by_admin_id'), headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content_type, 'application/json')
+        self.assertIn('error', response.json, msg=f'error not found in answer: {response.json}')
+        self.assertIn(
+            'message',
+            response.json['error'],
+            msg=f'"message" not found in answer: {response.json}'
+        )
+        self.assertEqual(response.json['error']['message'], 'Query parameter admin_id is required')
+
+        id_to_fetch = 'non-existent'
+        response = self.app.get(
+            url_for('get_kml_metadata_by_admin_id', admin_id=id_to_fetch),
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.content_type, 'application/json')
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(
+            response.json['error']['message'], f'Could not find {id_to_fetch} within the database.'
+        )
+
     def test_get_metadata_nonexistent(self):
         id_to_fetch = 'nonExistentId'
         response = self.app.get(

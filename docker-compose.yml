@@ -39,20 +39,41 @@ services:
   init-dynamo:
     image: amazon/aws-cli
     command:
-      [
-        "dynamodb",
-        "create-table",
-        "--table-name",
-        "test-db",
-        "--attribute-definitions",
-        "AttributeName=kml_id,AttributeType=S",
-        "--key-schema",
-        "AttributeName=kml_id,KeyType=HASH",
-        "--provisioned-throughput",
-        "ReadCapacityUnits=1,WriteCapacityUnits=1",
-        "--endpoint-url",
-        "http://dynamodb-local:8000",
-      ]
+      - dynamodb
+      - create-table
+      - --table-name
+      - test-db
+      - --attribute-definitions
+      - >-
+        [{
+          "AttributeName": "kml_id",
+          "AttributeType": "S"
+        }, {
+          "AttributeName": "admin_id",
+          "AttributeType": "S"
+        }]
+      - --key-schema
+      - AttributeName=kml_id,KeyType=HASH
+      - --global-secondary-indexes
+      - >-
+       {
+          "IndexName": "admin_id-index",
+          "KeySchema": [{
+            "AttributeName": "admin_id",
+            "KeyType": "HASH"
+          }],
+          "Projection": {
+            "ProjectionType": "ALL"
+          },
+          "ProvisionedThroughput": {
+            "ReadCapacityUnits": 1,
+            "WriteCapacityUnits": 1
+          }
+        }
+      - --provisioned-throughput
+      - ReadCapacityUnits=1,WriteCapacityUnits=1
+      - --endpoint-url
+      - http://dynamodb-local:8000
     links:
       - dynamodb-local
     environment:
