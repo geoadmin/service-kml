@@ -7,6 +7,7 @@ import boto3
 
 from botocore.client import Config
 from botocore.exceptions import EndpointConnectionError
+from boto3.dynamodb.conditions import Key
 
 from app.settings import AWS_DB_ENDPOINT_URL
 from app.settings import AWS_DB_REGION_NAME
@@ -69,6 +70,34 @@ class DynamoDBFilesHandler:
             abort(404, f"Could not find {kml_id} within the database.")
 
         return item
+
+    def get_item_by_admin_id(self, admin_id):
+        logger.debug('Get dynamodb item with admin_id "%s"', admin_id)
+        try:
+            items = self.table.query(
+                IndexName='admin_id-index',
+                KeyConditionExpression=Key('admin_id').eq(admin_id),
+            ).get('Items', None)
+        except EndpointConnectionError as error:
+            logger.exception('Failed to connect to DynamoDB: %s', error)
+            abort(502, 'Backend DB connection error, please consult logs')
+
+        if items is None or len(items) == 0:
+            logger.error(
+                "Could not find the following kml admin_id '%s' in the database: %s",
+                admin_id,
+                items
+            )
+            abort(404, f"Could not find {admin_id} within the database.")
+
+        if len(items) > 1:
+            logger.error(
+                "Find more than one kml_id %s within the database !",
+                admin_id,
+                extra={'kml_items': items}
+            )
+
+        return items[0]
 
     def update_item(self, kml_id, timestamp, empty):
         try:

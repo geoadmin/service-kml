@@ -25,3 +25,8 @@ MB = 1024 * 1024
 KML_MAX_SIZE = int(os.getenv('KML_MAX_SIZE', str(2 * MB)))
 
 KML_FILE_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
+
+ALLOWED_DOMAINS = os.getenv(
+    'ALLOWED_DOMAINS', r'.*\.geo\.admin\.ch,.*bgdi\.ch,.*\.swisstopo\.cloud'
+).split(',')
+ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))

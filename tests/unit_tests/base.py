@@ -66,11 +66,28 @@ def create_dynamodb():
                 {
                     'AttributeName': 'kml_id', 'AttributeType': 'S'
                 },
+                {
+                    'AttributeName': 'admin_id', 'AttributeType': 'S'
+                },
             ],
             KeySchema=[
                 {
                     'AttributeName': 'kml_id', 'KeyType': 'HASH'
                 },
+            ],
+            GlobalSecondaryIndexes=[
+                {
+                    "IndexName": "admin_id-index",
+                    "KeySchema": [{
+                        "AttributeName": "admin_id", "KeyType": "HASH"
+                    }],
+                    "Projection": {
+                        "ProjectionType": "ALL"
+                    },
+                    "ProvisionedThroughput": {
+                        "ReadCapacityUnits": 1, "WriteCapacityUnits": 1
+                    }
+                }
             ]
         )
     except dynamodb.meta.client.exceptions.ResourceInUseException as err:
