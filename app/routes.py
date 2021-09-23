@@ -42,6 +42,9 @@ def create_kml():
     # Get the kml file data
     kml_string, empty = validate_kml_file()
 
+    # Get the author
+    author = request.form.get('author', 'unknown')
+
     kml_admin_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
     kml_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
     file_key = f'{ROUTE_FILES_PREFIX}/{kml_id}'
@@ -51,7 +54,7 @@ def create_kml():
     storage.upload_object_to_bucket(file_key, kml_string)
 
     db = get_db()
-    db.save_item(kml_id, kml_admin_id, file_key, timestamp, empty)
+    db.save_item(kml_id, kml_admin_id, file_key, timestamp, empty, author)
 
     return make_response(
         jsonify(
