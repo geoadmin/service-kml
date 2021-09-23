@@ -216,3 +216,4 @@ The service is configured by Environment Variable:
 | KML_STORAGE_HOST_URL | `None` | KML storage host. This can be used if the S3 storage is not on the same host as the service (e.g. local development where service runs on `localhost:5000` and storage on `localhost:9090` |
 | KML_MAX_SIZE | `2 * 1024 * 1024` | KML max size file allowed in bytes |
 | ALLOWED_DOMAINS | `.*\.geo\.admin\.ch,.*bgdi\.ch,.*\.swisstopo\.cloud` | Comma separated of domain pattern allowed in Origin header |
+| KML_FILE_CACHE_CONTROL | `no-store, max-age=0` | Cache Control header set in answer when serving the KML file. |
