@@ -14,6 +14,7 @@ from botocore.exceptions import EndpointConnectionError
 from app.settings import AWS_S3_BUCKET_NAME
 from app.settings import AWS_S3_ENDPOINT_URL
 from app.settings import AWS_S3_REGION_NAME
+from app.settings import KML_FILE_CACHE_CONTROL
 from app.settings import KML_FILE_CONTENT_TYPE
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,8 @@ class S3FileHandling:
                 Body=data,
                 Bucket=AWS_S3_BUCKET_NAME,
                 Key=file_key,
-                ContentType=KML_FILE_CONTENT_TYPE
+                ContentType=KML_FILE_CONTENT_TYPE,
+                CacheControl=KML_FILE_CACHE_CONTROL
             )
         except EndpointConnectionError as error:
             logger.exception('Failed to connect to S3: %s', error)
