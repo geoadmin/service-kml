@@ -17,10 +17,6 @@ AWS_DB_TABLE_NAME = os.environ['AWS_DB_TABLE_NAME']
 AWS_DB_ENDPOINT_URL = os.getenv('AWS_DB_ENDPOINT_URL', None)
 KML_STORAGE_HOST_URL = os.getenv('KML_STORAGE_HOST_URL', None)
 
-ROUTE_BASE_PREFIX = 'api/kml'
-ROUTE_ADMIN_PREFIX = f'{ROUTE_BASE_PREFIX}/admin'
-ROUTE_FILES_PREFIX = f'{ROUTE_BASE_PREFIX}/files'
-
 MB = 1024 * 1024
 KML_MAX_SIZE = int(os.getenv('KML_MAX_SIZE', str(2 * MB)))
 
@@ -30,7 +26,7 @@ KML_FILE_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
 NO_CACHE = 'no-store, max-age=0'
 KML_FILE_CACHE_CONTROL = os.getenv('KML_FILE_CACHE_CONTROL', NO_CACHE)
 
-ALLOWED_DOMAINS = os.getenv(
-    'ALLOWED_DOMAINS', r'.*\.geo\.admin\.ch,.*bgdi\.ch,.*\.swisstopo\.cloud'
-).split(',')
+ALLOWED_DOMAINS = os.getenv('ALLOWED_DOMAINS', r'.*').split(',')
 ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))
+
+SCRIPT_NAME = os.getenv('SCRIPT_NAME', '')

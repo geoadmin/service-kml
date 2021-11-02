@@ -28,11 +28,11 @@ A detailed descriptions of the endpoints can be found in the [OpenAPI Spec](http
 
 ## Staging Environments
 
-| Environments | URL                                                                                                                   |
-| ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| DEV          | [https://service-kml.bgdi-dev.swisstopo.cloud/api/kml/](https://service-kml.bgdi-dev.swisstopo.cloud/api/kml/)  |
-| INT          | [https://service-kml.bgdi-int.swisstopo.cloud/api/kml/](https://service-kml.bgdi-int.swisstopo.cloud/api/kml/)  |
-| PROD         | [https://service-kml.bgdi-prod.swisstopo.cloud/api/kml/](https://service-kml.bgdi-int.swisstopo.cloud/api/kml/) |
+| Environments | URL                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------- |
+| DEV          | [https://sys-publid.dev.bgdi.ch/api/kml/](https://sys-publid.dev.bgdi.ch/api/kml/)  |
+| INT          | [https://sys-publid.int.bgdi.ch/api/kml/](https://sys-publid.int.bgdi.ch/api/kml/)  |
+| PROD         | [https://public.geo.admin.ch/api/kml/](https://public.geo.admin.ch/api/kml/)        |
 
 ## Versioning
 
@@ -115,24 +115,19 @@ This will serve the application through Flask without any wsgi in front.
 make gunicornserve
 ```
 
-This serve the spec using Swagger on localhost:8080/swagger
+This serve the application using gunicorn and with the path prefix set to `/api/kml`.
 
 ```bash
 make dockerrun
 ```
 
-This will serve the application with the wsgi server, inside a container.
-To stop serving through containers,
-
-```bash
-make shutdown
-```
-
-Is the command you're looking for.
+This will serve the application with the wsgi server, inside a container with the `/api/kml` path prefix.
 
 #### Testing with curl
 
-Here some curl examples
+Here some curl examples 
+
+***Note if you run the server with Flask `make serve` then you need to remove the `/api/kml` path prefix***
 
 ```bash
 # post a kml
@@ -197,8 +192,7 @@ make dockerpush
 
 ## Deployment
 
-This service is to be deployed to the Kubernetes cluster once it is merged.
-TO DO: give instructions to deploy to kubernetes.
+This service is to be deployed to the Kubernetes cluster. See [geoadmin/infra-kubernetes/services/service-kml/README.md](https://github.com/geoadmin/infra-kubernetes/blob/master/services/service-kml/README.md).
 
 ### Deployment configuration
 
@@ -215,5 +209,8 @@ The service is configured by Environment Variable:
 | AWS_DB_ENDPOINT_URL | `None` | AWS DynamoDB Endpoint URL. This can be used to use another DynamoDB service as the one from AWS (e.g. local DynamoDB) |
 | KML_STORAGE_HOST_URL | `None` | KML storage host. This can be used if the S3 storage is not on the same host as the service (e.g. local development where service runs on `localhost:5000` and storage on `localhost:9090` |
 | KML_MAX_SIZE | `2 * 1024 * 1024` | KML max size file allowed in bytes |
-| ALLOWED_DOMAINS | `.*\.geo\.admin\.ch,.*bgdi\.ch,.*\.swisstopo\.cloud` | Comma separated of domain pattern allowed in Origin header |
+| ALLOWED_DOMAINS | `.*` | Comma separated of domain pattern allowed in Origin header |
 | KML_FILE_CACHE_CONTROL | `no-store, max-age=0` | Cache Control header set in answer when serving the KML file. |
+| FORWARED_ALLOW_IPS | `*` | Sets the gunicorn `forwarded_allow_ips`. See [Gunicorn Doc](https://docs.gunicorn.org/en/stable/settings.html#forwarded-allow-ips). This setting is required in order to `secure_scheme_headers` to work. |
+| FORWARDED_PROTO_HEADER_NAME | `X-Forwarded-Proto` | Sets gunicorn `secure_scheme_headers` parameter to `{${FORWARDED_PROTO_HEADER_NAME}: 'https'}`. This settings is required in order to generate correct URLs in the service responses. See [Gunicorn Doc](https://docs.gunicorn.org/en/stable/settings.html#secure-scheme-headers). |
+| SCRIPT_NAME | `''` | If the service is behind a reverse proxy and not served at the root, the route prefix must be set in `SCRIPT_NAME`. |

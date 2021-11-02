@@ -19,23 +19,21 @@ from app.helpers.utils import validate_content_type
 from app.helpers.utils import validate_kml_file
 from app.helpers.utils import validate_permissions
 from app.settings import KML_MAX_SIZE
-from app.settings import ROUTE_ADMIN_PREFIX
-from app.settings import ROUTE_BASE_PREFIX
-from app.settings import ROUTE_FILES_PREFIX
+from app.settings import SCRIPT_NAME
 from app.version import APP_VERSION
 
 logger = logging.getLogger(__name__)
 
 
-@app.route(f'/{ROUTE_BASE_PREFIX}/checker', methods=['GET'])
+@app.route('/checker', methods=['GET'])
 def checker():
     return make_response(jsonify({'success': True, 'message': 'OK', 'version': APP_VERSION}))
 
 
-# NOTE the /kml/files/<kml_id> route is directly served by S3
+# NOTE the /files/<kml_id> route is directly served by S3
 
 
-@app.route(f'/{ROUTE_ADMIN_PREFIX}', methods=['POST'])
+@app.route('/admin', methods=['POST'])
 @validate_content_type("multipart/form-data")
 @validate_content_length(KML_MAX_SIZE)
 def create_kml():
@@ -47,7 +45,7 @@ def create_kml():
 
     kml_admin_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
     kml_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
-    file_key = f'{ROUTE_FILES_PREFIX}/{kml_id}'
+    file_key = f'{SCRIPT_NAME}/files/{kml_id}'.lstrip('/')
     timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
 
     storage = get_storage()
@@ -67,7 +65,7 @@ def create_kml():
                 'empty': empty,
                 'links':
                     {
-                        'self': f'{request.base_url}/{kml_id}',
+                        'self': url_for('get_kml_metadata', kml_id=kml_id, _external=True),
                         'kml': get_kml_file_link(file_key),
                     }
             }
@@ -76,7 +74,7 @@ def create_kml():
     )
 
 
-@app.route(f'/{ROUTE_ADMIN_PREFIX}', methods=['GET'])
+@app.route('/admin', methods=['GET'])
 def get_kml_metadata_by_admin_id():
     admin_id = request.args.get('admin_id')
     if not admin_id:
@@ -103,7 +101,7 @@ def get_kml_metadata_by_admin_id():
     )
 
 
-@app.route(f'/{ROUTE_ADMIN_PREFIX}/<kml_id>', methods=['GET'])
+@app.route('/admin/<kml_id>', methods=['GET'])
 def get_kml_metadata(kml_id):
     item = get_db().get_item(kml_id)
     return make_response(
@@ -114,17 +112,18 @@ def get_kml_metadata(kml_id):
                 'created': item['created'],
                 'updated': item['updated'],
                 'empty': item['empty'],
-                'links': {
-                    'self': request.base_url,
-                    'kml': get_kml_file_link(item['file_key']),
-                }
+                'links':
+                    {
+                        'self': url_for('get_kml_metadata', kml_id=kml_id, _external=True),
+                        'kml': get_kml_file_link(item['file_key']),
+                    }
             }
         ),
         200
     )
 
 
-@app.route(f'/{ROUTE_ADMIN_PREFIX}/<kml_id>', methods=['PUT'])
+@app.route('/admin/<kml_id>', methods=['PUT'])
 @validate_content_type("multipart/form-data")
 @validate_content_length(KML_MAX_SIZE)
 def update_kml(kml_id):
@@ -151,17 +150,18 @@ def update_kml(kml_id):
                 'created': item['created'],
                 'updated': timestamp,
                 'empty': empty,
-                'links': {
-                    'self': request.base_url,
-                    'kml': get_kml_file_link(item['file_key']),
-                }
+                'links':
+                    {
+                        'self': url_for('get_kml_metadata', kml_id=kml_id, _external=True),
+                        'kml': get_kml_file_link(item['file_key']),
+                    }
             }
         ),
         200
     )
 
 
-@app.route(f'/{ROUTE_ADMIN_PREFIX}/<kml_id>', methods=['DELETE'])
+@app.route('/admin/<kml_id>', methods=['DELETE'])
 @validate_content_type("multipart/form-data")
 def delete_kml(kml_id):
     db = get_db()
