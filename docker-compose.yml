@@ -1,8 +1,82 @@
-version: "2"
+version: "3.4"
 services:
-  app:
-    image: "swisstopo/${SERVICE_NAME}:local"
+  s3:
+    image: minio/minio
+    env_file: ./minio.env
+    command: server /data
+    volumes:
+      - type: bind
+        source: ${PWD}/.volumes/minio
+        target: /data
     ports:
-      - "${HTTP_PORT}:8080"
+      - 9090:9000
+  s3-client:
+    image: minio/mc
+    links:
+      - s3
+    env_file: ./minio.env
+    restart: on-failure
+    entrypoint: >
+      /bin/sh -c "
+        set +o history;
+        while ! echo > /dev/tcp/s3/9000;
+        do
+          echo waiting for minio;
+          sleep 1;
+        done;
+        echo minio server is up;
+        /usr/bin/mc alias set minio http://s3:9000 dummy-123 dummy-123;
+        /usr/bin/mc mb minio/test-bucket;
+        /usr/bin/mc policy set public minio/test-bucket;
+        exit 0;
+      "
+  dynamodb-local:
+    command: "-jar DynamoDBLocal.jar -sharedDb"
+    image: "amazon/dynamodb-local:latest"
+    container_name: dynamodb-local
+    ports:
+      - "8080:8000"
+  init-dynamo:
+    image: amazon/aws-cli
+    command:
+      - dynamodb
+      - create-table
+      - --table-name
+      - test-db
+      - --attribute-definitions
+      - >-
+        [{
+          "AttributeName": "kml_id",
+          "AttributeType": "S"
+        }, {
+          "AttributeName": "admin_id",
+          "AttributeType": "S"
+        }]
+      - --key-schema
+      - AttributeName=kml_id,KeyType=HASH
+      - --global-secondary-indexes
+      - >-
+       {
+          "IndexName": "admin_id-index",
+          "KeySchema": [{
+            "AttributeName": "admin_id",
+            "KeyType": "HASH"
+          }],
+          "Projection": {
+            "ProjectionType": "ALL"
+          },
+          "ProvisionedThroughput": {
+            "ReadCapacityUnits": 1,
+            "WriteCapacityUnits": 1
+          }
+        }
+      - --provisioned-throughput
+      - ReadCapacityUnits=1,WriteCapacityUnits=1
+      - --endpoint-url
+      - http://dynamodb-local:8000
+    links:
+      - dynamodb-local
     environment:
-      - LOGGING_CFG
+      - AWS_ACCESS_KEY_ID=dummy-123
+      - AWS_SECRET_ACCESS_KEY=dummy-123
+      - AWS_DEFAULT_REGION=wonderland

@@ -58,3 +58,10 @@ nose2-junit.xml
 
 # visual studio code config
 .vscode
+
+# .env files
+.env.local
+
+# files for local testing
+.volumes
+logs

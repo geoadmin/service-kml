@@ -1,3 +1,17 @@
+"""
+The gevent monkey import and patch suppress a warning, and a potential problem.
+Gunicorn would call it anyway, but if it tries to call it after the ssl module
+has been initialized in another module (like, in our code, by the botocore
+library), then it could lead to inconsistencies in how the ssl module is used.
+Thus we patch the ssl module through gevent.monkey.patch_all before any other
+import, especially the app import, which would cause the boto module to be
+loaded, which would in turn load the ssl module.
+"""
+# pylint: disable=wrong-import-position,wrong-import-order
+import gevent.monkey
+
+gevent.monkey.patch_all()
+
 import os
 
 from gunicorn.app.base import BaseApplication
@@ -32,8 +46,13 @@ if __name__ == '__main__':
     options = {
         'bind': '%s:%s' % ('0.0.0.0', HTTP_PORT),
         'worker_class': 'gevent',
-        'workers': 2,  # scaling horizontaly is left to Kubernetes
+        'workers': 2,  # scaling horizontally is left to Kubernetes
         'timeout': 60,
-        'logconfig_dict': get_logging_cfg()
+        'logconfig_dict': get_logging_cfg(),
+        'forwarded_allow_ips': os.getenv('FORWARED_ALLOW_IPS', '*'),
+        'secure_scheme_headers':
+            {
+                os.getenv('FORWARDED_PROTO_HEADER_NAME', 'X-Forwarded-Proto').upper(): 'https'
+            }
     }
     StandaloneApplication(application, options).run()

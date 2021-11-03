@@ -9,16 +9,14 @@
 
 - [Table of content](#table-of-content)
 - [Description](#description)
-  - [Staging Environments](#staging-environments)
-  - [POST](#post)
-  - [GET](#get)
-  - [PUT](#put)
+- [Staging Environments](#staging-environments)
 - [Versioning](#versioning)
 - [Local Development](#local-development)
   - [Make Dependencies](#make-dependencies)
   - [Setting up to work](#setting-up-to-work)
   - [Linting and formatting your work](#linting-and-formatting-your-work)
   - [Test your work](#test-your-work)
+    - [Testing with curl](#testing-with-curl)
   - [Docker helpers](#docker-helpers)
 - [Deployment](#deployment)
   - [Deployment configuration](#deployment-configuration)
@@ -26,43 +24,15 @@
 ## Description
 
 A Microservice which stores drawings that are created in the mapviewer on s3.
-A detailed descriptions of the endpoints can be found in the [OpenAPI Spec](openapi.yaml).
+A detailed descriptions of the endpoints can be found in the [OpenAPI Spec](https://github.com/geoadmin/doc-api-specs/blob/develop/public.geo.admin.ch/public.geo.admin.ch.yaml).
 
-### Staging Environments
+## Staging Environments
 
-This service has three endpoints:
-
-- POST/kml
-- GET/kml/{id}
-- PUT/kml/{id}
-
-| Environments | URL                                                                                                                   |
-| ------------ | --------------------------------------------------------------------------------------------------------------------- |
-| DEV          | [https://service-kml.bgdi-dev.swisstopo.cloud/v4/name/](https://service-kml.bgdi-dev.swisstopo.cloud/v4/name/)  |
-| INT          | [https://service-kml.bgdi-int.swisstopo.cloud/v4/name/](https://service-kml.bgdi-int.swisstopo.cloud/v4/name/)  |
-| PROD         | [https://service-kml.bgdi-prod.swisstopo.cloud/v4/name/](https://service-kml.bgdi-int.swisstopo.cloud/v4/name/) |
-
-### POST
-
-Payload is the kml drawn in the map.
-
-| Path | Method | Content Type | Refer | Response Type|
-|------|--------|--------------|-------|--------------|
-| | POST | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
-
-### GET
-
-| Path | Method | Response Type|
-|------|--------|--------------|
-| | GET | application/vnd.google-earth.kml+xml |
-
-### PUT
-
-Payload is the kml to update.
-
-| Path | Method | Content Type | Refer | Response Type|
-|------|--------|--------------|-------|--------------|
-| | PUT | application/vnd.google-earth.kml+xml | map.geo.admin.ch, .bgdi.ch | application/json |
+| Environments | URL                                                                                 |
+| ------------ | ----------------------------------------------------------------------------------- |
+| DEV          | [https://sys-public.dev.bgdi.ch/api/kml/](https://sys-public.dev.bgdi.ch/api/kml/)  |
+| INT          | [https://sys-public.int.bgdi.ch/api/kml/](https://sys-public.int.bgdi.ch/api/kml/)  |
+| PROD         | [https://public.geo.admin.ch/api/kml/](https://public.geo.admin.ch/api/kml/)        |
 
 ## Versioning
 
@@ -79,42 +49,106 @@ The **Make** targets assume you have **python3.7**, **pipenv**, **bash**, **curl
 ### Setting up to work
 
 First, you'll need to clone the repo
-    git clone git@github.com:geoadmin/service-kml
-Then, you can run the setup target to ensure you have everything needed to develop, test and serve locally
-    make setup
+
+```bash
+git clone git@github.com:geoadmin/service-kml
+```
+
+If needed create and adapt your local copy of .env.default to your needs.
+Afterwards source it (otherwise default values will be used by the service) and
+let ENV_FILE point to your local env file:
+
+```bash
+cp .env.default .env.local
+source .env.local
+export ENV_FILE=.env.local
+```
+
+Then, you can run the dev target to ensure you have everything needed to develop, test and serve locally
+
+```bash
+make dev
+```
+
+The other services that are used (DynamoDB local and [MinIO](https://www.min.io) as local S3 replacement) are wrapped in a docker compose.
+
+Starting DynamoDB local and MinIO is done with a simple
+
+```bash
+docker-compose up
+```
+
+in the source root folder. Make sure to run `make dev` before to ensure the necessary folders `.volumes/*` are in place. These folders are mounted in the services and allow data persistency over restarts of the containers.
+
 That's it, you're ready to work.
+
 ### Linting and formatting your work
+
 In order to have a consistent code style the code should be formatted using `yapf`. Also to avoid syntax errors and non
 pythonic idioms code, the project uses the `pylint` linter. Both formatting and linter can be manually run using the
 following command:
-    make format-lint
+
+```bash
+make format-lint
+```
+
 **Formatting and linting should be at best integrated inside the IDE, for this look at
 [Integrate yapf and pylint into IDE](https://github.com/geoadmin/doc-guidelines/blob/master/PYTHON.md#yapf-and-pylint-ide-integration)**
+
 ### Test your work
+
 Testing if what you developed work is made simple. You have four targets at your disposal. **test, serve, gunicornserve, dockerrun**
-    make test
+
+```bash
+make test
+```
+
 This command run the integration and unit tests.
-    make serve
+
+```bash
+make serve
+```
+
 This will serve the application through Flask without any wsgi in front.
 
-    make gunicornserve
+```bash
+make gunicornserve
+```
 
-This will serve the application with the Gunicorn layer in front of the application
+This serve the application using gunicorn and with the path prefix set to `/api/kml`.
 
-    make dockerrun
+```bash
+make dockerrun
+```
 
-This will serve the application with the wsgi server, inside a container.
-To stop serving through containers,
+This will serve the application with the wsgi server, inside a container with the `/api/kml` path prefix.
 
-    make shutdown
+#### Testing with curl
 
-Is the command you're looking for.
+Here some curl examples 
+
+***Note if you run the server with Flask `make serve` then you need to remove the `/api/kml` path prefix***
+
+```bash
+# post a kml
+curl -X POST http://localhost:5000/api/kml/admin -F kml="@./tests/samples/valid-kml.xml; type=application/vnd.google-earth.kml+xml" -H "Origin: map.geo.admin.ch"
+
+# get the kml metadata
+curl http://localhost:5000/api/kml/admin/${KML_ID} -H "Origin: map.geo.admin.ch"
+
+# update the kml file
+curl -X PUT http://localhost:5000/api/kml/admin/${KML_ID} -F admin_id=${ADMIN_ID} -F kml="@./tests/samples/updated-kml.xml; type=application/vnd.google-earth.kml+xml" -H "Origin: map.geo.admin.ch"
+
+# delete the kml
+curl -X DELETE http://localhost:5000/api/kml/admin/${KML_ID} -F admin_id=${ADMIN_ID} -H "Origin: map.geo.admin.ch"
+```
+
 ### Docker helpers
 
 From each github PR that is merged into `master` or into `develop`, one Docker image is built and pushed on AWS ECR with the following tag:
 
 - `vX.X.X` for tags on master
-- `vX.X.X-beta.X` for tags on develop 
+- `vX.X.X-beta.X` for tags on develop
 
 Each image contains the following metadata:
 
@@ -156,11 +190,10 @@ make dockerlogin
 make dockerpush
 ```
 
-
 ## Deployment
 
-This service is to be deployed to the Kubernetes cluster once it is merged.
-TO DO: give instructions to deploy to kubernetes.
+This service is to be deployed to the Kubernetes cluster. See [geoadmin/infra-kubernetes/services/service-kml/README.md](https://github.com/geoadmin/infra-kubernetes/blob/master/services/service-kml/README.md).
+
 ### Deployment configuration
 
 The service is configured by Environment Variable:
@@ -168,3 +201,16 @@ The service is configured by Environment Variable:
 | Env         | Default               | Description                |
 | ----------- | --------------------- | -------------------------- |
 | LOGGING_CFG | logging-cfg-local.yml | Logging configuration file |
+| AWS_S3_BUCKET_NAME | | AWS S3 bucket name used to save and serve KML files |
+| AWS_S3_REGION_NAME | | AWS region name of the S3 service |
+| AWS_S3_ENDPOINT_URL | `None` | AWS S3 Endpoint URL. This can be used to use another S3 service as the one from AWS (e.g. local minio) |
+| AWS_DB_REGION_NAME | | AWS DynamoDB region name |
+| AWS_DB_TABLE_NAME | | AWS DynamoDB table name |
+| AWS_DB_ENDPOINT_URL | `None` | AWS DynamoDB Endpoint URL. This can be used to use another DynamoDB service as the one from AWS (e.g. local DynamoDB) |
+| KML_STORAGE_HOST_URL | `None` | KML storage host. This can be used if the S3 storage is not on the same host as the service (e.g. local development where service runs on `localhost:5000` and storage on `localhost:9090` |
+| KML_MAX_SIZE | `2 * 1024 * 1024` | KML max size file allowed in bytes |
+| ALLOWED_DOMAINS | `.*` | Comma separated of domain pattern allowed in Origin header |
+| KML_FILE_CACHE_CONTROL | `no-store, max-age=0` | Cache Control header set in answer when serving the KML file. |
+| FORWARED_ALLOW_IPS | `*` | Sets the gunicorn `forwarded_allow_ips`. See [Gunicorn Doc](https://docs.gunicorn.org/en/stable/settings.html#forwarded-allow-ips). This setting is required in order to `secure_scheme_headers` to work. |
+| FORWARDED_PROTO_HEADER_NAME | `X-Forwarded-Proto` | Sets gunicorn `secure_scheme_headers` parameter to `{${FORWARDED_PROTO_HEADER_NAME}: 'https'}`. This settings is required in order to generate correct URLs in the service responses. See [Gunicorn Doc](https://docs.gunicorn.org/en/stable/settings.html#secure-scheme-headers). |
+| SCRIPT_NAME | `''` | If the service is behind a reverse proxy and not served at the root, the route prefix must be set in `SCRIPT_NAME`. |
