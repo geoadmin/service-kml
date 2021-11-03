@@ -30,8 +30,8 @@ A detailed descriptions of the endpoints can be found in the [OpenAPI Spec](http
 
 | Environments | URL                                                                                 |
 | ------------ | ----------------------------------------------------------------------------------- |
-| DEV          | [https://sys-publid.dev.bgdi.ch/api/kml/](https://sys-publid.dev.bgdi.ch/api/kml/)  |
-| INT          | [https://sys-publid.int.bgdi.ch/api/kml/](https://sys-publid.int.bgdi.ch/api/kml/)  |
+| DEV          | [https://sys-public.dev.bgdi.ch/api/kml/](https://sys-public.dev.bgdi.ch/api/kml/)  |
+| INT          | [https://sys-public.int.bgdi.ch/api/kml/](https://sys-public.int.bgdi.ch/api/kml/)  |
 | PROD         | [https://public.geo.admin.ch/api/kml/](https://public.geo.admin.ch/api/kml/)        |
 
 ## Versioning
