@@ -10,7 +10,6 @@ from flask import g
 from flask import request
 
 from app.helpers.utils import make_error_msg
-from app.middleware import ReverseProxy
 from app.settings import ALLOWED_DOMAINS_PATTERN
 
 logger = logging.getLogger(__name__)
@@ -18,7 +17,6 @@ logger = logging.getLogger(__name__)
 # Standard Flask application initialisation
 
 app = Flask(__name__)
-app.wsgi_app = ReverseProxy(app.wsgi_app, script_name='/')
 
 
 # Add quick log of the routes used to all request.
