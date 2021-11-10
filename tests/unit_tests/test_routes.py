@@ -20,6 +20,7 @@ class CheckerTests(BaseRouteTestCase):
     def test_checker(self):
         response = self.app.get(url_for('checker'), headers=self.origin_headers["allowed"])
         self.assertEqual(response.status_code, 200)
+        self.assertNotIn('Cache-Control', response.headers)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json, {"message": "OK", "success": True, "version": APP_VERSION})
 
@@ -92,6 +93,10 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 200)
+        self.assertIn('Cache-Control', response.headers)
+        self.assertIn('no-cache', response.headers['Cache-Control'])
+        self.assertIn('Expire', response.headers)
+        self.assertEqual(response.headers['Expire'], '0')
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
@@ -106,6 +111,10 @@ class TestGetEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 200, msg=f'Request failed: {response.json}')
+        self.assertIn('Cache-Control', response.headers)
+        self.assertIn('no-cache', response.headers['Cache-Control'])
+        self.assertIn('Expire', response.headers)
+        self.assertEqual(response.headers['Expire'], '0')
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
@@ -116,6 +125,9 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata_by_admin_id'), headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 400)
+        self.assertIn('Cache-Control', response.headers)
+        self.assertIn('max-age=3600', response.headers['Cache-Control'])
+        self.assertNotIn('Expire', response.headers)
         self.assertEqual(response.content_type, 'application/json')
         self.assertIn('error', response.json, msg=f'error not found in answer: {response.json}')
         self.assertIn(
@@ -131,6 +143,9 @@ class TestGetEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 404)
+        self.assertIn('Cache-Control', response.headers)
+        self.assertIn('max-age=3600', response.headers['Cache-Control'])
+        self.assertNotIn('Expire', response.headers)
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(
@@ -143,6 +158,9 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 404)
+        self.assertIn('Cache-Control', response.headers)
+        self.assertIn('max-age=3600', response.headers['Cache-Control'])
+        self.assertNotIn('Expire', response.headers)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(
             response.json['error']['message'], f'Could not find {id_to_fetch} within the database.'
@@ -154,6 +172,9 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertIn('Cache-Control', response.headers)
+        self.assertIn('max-age=3600', response.headers['Cache-Control'])
+        self.assertNotIn('Expire', response.headers)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 

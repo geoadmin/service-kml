@@ -214,3 +214,5 @@ The service is configured by Environment Variable:
 | FORWARED_ALLOW_IPS | `*` | Sets the gunicorn `forwarded_allow_ips`. See [Gunicorn Doc](https://docs.gunicorn.org/en/stable/settings.html#forwarded-allow-ips). This setting is required in order to `secure_scheme_headers` to work. |
 | FORWARDED_PROTO_HEADER_NAME | `X-Forwarded-Proto` | Sets gunicorn `secure_scheme_headers` parameter to `{${FORWARDED_PROTO_HEADER_NAME}: 'https'}`. This settings is required in order to generate correct URLs in the service responses. See [Gunicorn Doc](https://docs.gunicorn.org/en/stable/settings.html#secure-scheme-headers). |
 | SCRIPT_NAME | `''` | If the service is behind a reverse proxy and not served at the root, the route prefix must be set in `SCRIPT_NAME`. |
+| CACHE_CONTROL | `no-cache, no-store, must-revalidate` | Cache Control header value of the GET endpoint(s) |
+| CACHE_CONTROL_4XX | `public, max-age=3600` | Cache Control header for 4XX responses |
