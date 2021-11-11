@@ -30,3 +30,6 @@ ALLOWED_DOMAINS = os.getenv('ALLOWED_DOMAINS', r'.*').split(',')
 ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))
 
 SCRIPT_NAME = os.getenv('SCRIPT_NAME', '')
+
+CACHE_CONTROL = os.getenv('CACHE_CONTROL', 'no-cache, no-store, must-revalidate')
+CACHE_CONTROL_4XX = os.getenv('CACHE_CONTROL_4XX', 'public, max-age=3600')
