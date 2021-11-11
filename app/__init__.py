@@ -10,6 +10,7 @@ from flask import g
 from flask import request
 from flask import url_for
 
+from app.helpers.utils import get_registered_method
 from app.helpers.utils import make_error_msg
 from app.settings import ALLOWED_DOMAINS_PATTERN
 from app.settings import CACHE_CONTROL
@@ -39,7 +40,12 @@ def add_cors_header(response):
         re.match(ALLOWED_DOMAINS_PATTERN, request.headers['Origin'])
     ):
         response.headers['Access-Control-Allow-Origin'] = request.headers['Origin']
-        response.headers['Access-Control-Allow-Methods'] = 'DELETE, GET, OPTIONS, POST, PUT'
+
+    # Always add the allowed methods.
+    response.headers.set(
+        'Access-Control-Allow-Methods', ', '.join(get_registered_method(app, request.endpoint))
+    )
+    response.headers.set('Access-Control-Allow-Headers', '*')
     return response
 
 

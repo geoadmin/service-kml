@@ -36,6 +36,7 @@ class TestPostEndpoint(BaseRouteTestCase):
     def test_valid_kml_post(self):
         response = self.create_test_kml()
         self.assertEqual(response.status_code, 201)
+        self.assertCors(response, ['POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
         self.compare_kml_contents(response, self.kml_dict["valid"])
 
@@ -47,6 +48,7 @@ class TestPostEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 400)
+        self.assertCors(response, ['POST', 'OPTIONS'])
         self.assertEqual(response.json['error']['message'], 'Invalid kml file')
         self.assertEqual(response.content_type, "application/json")
 
@@ -58,6 +60,7 @@ class TestPostEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['POST', 'OPTIONS'], check_origin=False)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -69,6 +72,7 @@ class TestPostEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 415)
+        self.assertCors(response, ['POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Unsupported Media Type")
 
@@ -79,6 +83,7 @@ class TestPostEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 415)
+        self.assertCors(response, ['POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Unsupported KML media type")
 
@@ -93,6 +98,7 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 200)
+        self.assertCors(response, ['GET', 'HEAD', 'OPTIONS'])
         self.assertIn('Cache-Control', response.headers)
         self.assertIn('no-cache', response.headers['Cache-Control'])
         self.assertIn('Expire', response.headers)
@@ -111,6 +117,7 @@ class TestGetEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 200, msg=f'Request failed: {response.json}')
+        self.assertCors(response, ['GET', 'HEAD', 'OPTIONS'])
         self.assertIn('Cache-Control', response.headers)
         self.assertIn('no-cache', response.headers['Cache-Control'])
         self.assertIn('Expire', response.headers)
@@ -125,6 +132,7 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata_by_admin_id'), headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 400)
+        self.assertCors(response, ['GET', 'HEAD', 'OPTIONS'])
         self.assertIn('Cache-Control', response.headers)
         self.assertIn('max-age=3600', response.headers['Cache-Control'])
         self.assertNotIn('Expire', response.headers)
@@ -143,6 +151,7 @@ class TestGetEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 404)
+        self.assertCors(response, ['GET', 'HEAD', 'OPTIONS'])
         self.assertIn('Cache-Control', response.headers)
         self.assertIn('max-age=3600', response.headers['Cache-Control'])
         self.assertNotIn('Expire', response.headers)
@@ -158,6 +167,7 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 404)
+        self.assertCors(response, ['GET', 'HEAD', 'OPTIONS'])
         self.assertIn('Cache-Control', response.headers)
         self.assertIn('max-age=3600', response.headers['Cache-Control'])
         self.assertNotIn('Expire', response.headers)
@@ -172,6 +182,7 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['GET', 'HEAD', 'OPTIONS'], check_origin=False)
         self.assertIn('Cache-Control', response.headers)
         self.assertIn('max-age=3600', response.headers['Cache-Control'])
         self.assertNotIn('Expire', response.headers)
@@ -192,6 +203,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 200)
+        self.assertCors(response, ['PUT', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")
         for key in self.sample_kml:
             # values for "updated" should and may differ, so ignore them in
@@ -221,6 +233,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 400)
+        self.assertCors(response, ['PUT', 'OPTIONS'])
         self.assertEqual(response.json['error']['message'], 'Invalid kml file')
         self.assertEqual(response.content_type, "application/json")
 
@@ -237,6 +250,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 404)
+        self.assertCors(response, ['PUT', 'OPTIONS'])
         self.assertEqual(
             response.json['error']['message'],
             f'Could not find {id_to_update} within the database.'
@@ -254,6 +268,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['PUT', 'OPTIONS'], check_origin=False)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -266,6 +281,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['PUT', 'OPTIONS'], check_origin=False)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -278,6 +294,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['PUT', 'OPTIONS'], check_origin=False)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -297,6 +314,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 200)
+        self.assertCors(response, ['DELETE', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")
 
         response = self.app.get(
@@ -317,6 +335,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         )
 
         self.assertEqual(response.status_code, 404)
+        self.assertCors(response, ['DELETE', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(
             response.json['error']['message'],
@@ -333,6 +352,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['DELETE', 'OPTIONS'], check_origin=False)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -346,6 +366,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['DELETE', 'OPTIONS'], check_origin=False)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -358,6 +379,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['DELETE', 'OPTIONS'], check_origin=False)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -371,5 +393,6 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 415)
+        self.assertCors(response, ['DELETE', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Unsupported Media Type")
