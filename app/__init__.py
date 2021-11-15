@@ -47,7 +47,7 @@ def add_cors_header(response):
 
     # Always add the allowed methods.
     response.headers.set(
-        'Access-Control-Allow-Methods', ', '.join(get_registered_method(app, request.endpoint))
+        'Access-Control-Allow-Methods', ', '.join(get_registered_method(app, request.url_rule))
     )
     response.headers.set('Access-Control-Allow-Headers', '*')
     return response
