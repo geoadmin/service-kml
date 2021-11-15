@@ -3,6 +3,7 @@ import logging.config
 import os
 import re
 from functools import wraps
+from itertools import chain
 from urllib.parse import unquote_plus
 
 import yaml
@@ -157,3 +158,22 @@ def get_kml_file_link(file_key):
     if KML_STORAGE_HOST_URL:
         return f'{KML_STORAGE_HOST_URL}/{file_key}'
     return f'{request.host_url}{file_key}'
+
+
+def get_registered_method(app, url_rule):
+    '''Returns the list of registered method for the given endpoint'''
+
+    # The list of registered method is taken from the werkzeug.routing.Rule. A Rule object
+    # has a methods property with the list of allowed method on an endpoint. If this property is
+    # missing then all methods are allowed.
+    # See https://werkzeug.palletsprojects.com/en/2.0.x/routing/#werkzeug.routing.Rule
+    all_methods = ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'DELETE']
+    return set(
+        chain.from_iterable(
+            [
+                r.methods if r.methods else all_methods
+                for r in app.url_map.iter_rules()
+                if r.rule == str(url_rule)
+            ]
+        )
+    )

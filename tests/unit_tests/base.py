@@ -1,5 +1,6 @@
 import io
 import logging
+import re
 import unittest
 
 from flask.helpers import url_for
@@ -10,6 +11,7 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 
 from app import app
+from app.settings import ALLOWED_DOMAINS_PATTERN
 from app.settings import AWS_DB_ENDPOINT_URL
 from app.settings import AWS_DB_REGION_NAME
 from app.settings import AWS_DB_TABLE_NAME
@@ -142,6 +144,25 @@ class BaseRouteTestCase(unittest.TestCase):
     def tearDown(self):
         super().tearDown()
         self.delete_test_kml(self.sample_kml['id'], self.sample_kml['admin_id'])
+
+    def assertCors(self, response, expected_allowed_methods, check_origin=True):  # pylint: disable=invalid-name
+        if check_origin:
+            self.assertIn('Access-Control-Allow-Origin', response.headers)
+            self.assertTrue(
+                re.match(ALLOWED_DOMAINS_PATTERN, response.headers['Access-Control-Allow-Origin'])
+            )
+        self.assertIn('Access-Control-Allow-Methods', response.headers)
+        self.assertListEqual(
+            sorted(expected_allowed_methods),
+            sorted(
+                map(
+                    lambda m: m.strip(),
+                    response.headers['Access-Control-Allow-Methods'].split(',')
+                )
+            )
+        )
+        self.assertIn('Access-Control-Allow-Headers', response.headers)
+        self.assertEqual(response.headers['Access-Control-Allow-Headers'], '*')
 
     def create_test_kml(self):
         response = self.app.post(
