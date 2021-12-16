@@ -14,6 +14,7 @@ from app import app
 from app.helpers.dynamodb import get_db
 from app.helpers.s3 import get_storage
 from app.helpers.utils import get_kml_file_link
+from app.helpers.utils import gzip_string
 from app.helpers.utils import validate_content_length
 from app.helpers.utils import validate_content_type
 from app.helpers.utils import validate_kml_file
@@ -39,7 +40,6 @@ def checker():
 def create_kml():
     # Get the kml file data
     kml_string, empty = validate_kml_file()
-
     # Get the author
     author = request.form.get('author', 'unknown')
 
@@ -49,7 +49,7 @@ def create_kml():
     timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
 
     storage = get_storage()
-    storage.upload_object_to_bucket(file_key, kml_string)
+    storage.upload_object_to_bucket(file_key, gzip_string(kml_string))
 
     db = get_db()
     db.save_item(kml_id, kml_admin_id, file_key, timestamp, empty, author)
@@ -136,7 +136,7 @@ def update_kml(kml_id):
     kml_string, empty = validate_kml_file()
 
     storage = get_storage()
-    storage.upload_object_to_bucket(item['file_key'], kml_string)
+    storage.upload_object_to_bucket(item['file_key'], gzip_string(kml_string))
 
     timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
     db.update_item(kml_id, timestamp, empty)

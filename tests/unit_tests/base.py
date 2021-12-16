@@ -11,6 +11,7 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 
 from app import app
+from app.helpers.utils import decompress_if_gzipped
 from app.settings import ALLOWED_DOMAINS_PATTERN
 from app.settings import AWS_DB_ENDPOINT_URL
 from app.settings import AWS_DB_REGION_NAME
@@ -216,8 +217,8 @@ class BaseRouteTestCase(unittest.TestCase):
             else:
                 self.fail(f'S3 client error: {error}')
 
-        body = obj['Body'].read()
-        self.assertEqual(body.decode("utf-8"), expected_kml)
+        body = decompress_if_gzipped((obj['Body']))
+        self.assertEqual(body.decode('utf-8'), expected_kml)
 
     def get_s3_object(self, file_key):
         try:
