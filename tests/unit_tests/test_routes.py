@@ -41,20 +41,14 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.compare_kml_contents(response, self.kml_dict["valid"])
 
     def test_valid_gzipped_kml_post(self):
-        file = {
-            'kml':
-                (
-                    open('./tests/samples/valid-kml.xml.gz', 'rb'),
-                    'valid-kml.xml.gz',
-                    'application/vnd.google-earth.kml+xml'
-                )
-        }
-        response = self.app.post(
-            url_for('create_kml'),
-            data=file,
-            content_type="multipart/form-data",
-            headers=self.origin_headers["allowed"]
-        )
+        with open('./tests/samples/valid-kml.xml.gz', 'rb') as kml_file:
+            file = {'kml': (kml_file, 'valid-kml.xml.gz', 'application/vnd.google-earth.kml+xml')}
+            response = self.app.post(
+                url_for('create_kml'),
+                data=file,
+                content_type="multipart/form-data",
+                headers=self.origin_headers["allowed"]
+            )
         self.assertEqual(response.status_code, 201, msg="GZIP")
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
@@ -243,22 +237,23 @@ class TestPutEndpoint(BaseRouteTestCase):
 
     def test_valid_gzipped_kml_put(self):
         id_to_put = self.sample_kml['id']
-        data = {
-            'admin_id':
-                self.sample_kml['admin_id'],
-            'kml':
-                (
-                    open('./tests/samples/updated-kml.xml.gz', 'rb'),
-                    'valid-kml.xml.gz',
-                    'application/vnd.google-earth.kml+xml'
-                )
-        }
-        response = self.app.put(
-            url_for('update_kml', kml_id=id_to_put),
-            data=data,
-            content_type="multipart/form-data",
-            headers=self.origin_headers["allowed"]
-        )
+        with open('./tests/samples/updated-kml.xml.gz', 'rb') as updated_kml_file:
+            data = {
+                'admin_id':
+                    self.sample_kml['admin_id'],
+                'kml':
+                    (
+                        updated_kml_file,
+                        'updated-kml.xml.gz',
+                        'application/vnd.google-earth.kml+xml'
+                    )
+            }
+            response = self.app.put(
+                url_for('update_kml', kml_id=id_to_put),
+                data=data,
+                content_type="multipart/form-data",
+                headers=self.origin_headers["allowed"]
+            )
         self.assertEqual(response.status_code, 200)
         self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")
