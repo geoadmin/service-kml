@@ -148,11 +148,16 @@ def validate_kml_file():
         )
         abort(415, "Unsupported KML media type")
     file_content = decompress_if_gzipped(file)
-    if 'charset' in file.mimetype_params:
-        quoted_data = file_content.decode(file.mimetype_params['charset'])
-    else:
-        quoted_data = file_content.decode('utf-8')
-    return validate_kml_string(unquote_plus(quoted_data))
+    try:
+        if 'charset' in file.mimetype_params:
+            quoted_data = file_content.decode(file.mimetype_params['charset'])
+        else:
+            quoted_data = file_content.decode('utf-8')
+    except UnicodeDecodeError as error:
+        logger.error("Could not decode file content: %s", error)
+        abort(400, "Could not decode file content")
+    kml_string, empty = validate_kml_string(unquote_plus(quoted_data))
+    return gzip_string(kml_string), empty
 
 
 def get_kml_file_link(file_key):
@@ -185,7 +190,7 @@ def gzip_string(string):
         data = string.encode('utf-8')
     except (UnicodeDecodeError, AttributeError) as error:
         logger.error("Error when encoding string: %s", error)
-
+        raise error
     gzipped_data = gzip.compress(data, compresslevel=5)
 
     return gzipped_data
