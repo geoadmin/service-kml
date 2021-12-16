@@ -49,7 +49,7 @@ class TestPostEndpoint(BaseRouteTestCase):
                 content_type="multipart/form-data",
                 headers=self.origin_headers["allowed"]
             )
-        self.assertEqual(response.status_code, 201, msg="GZIP")
+        self.assertEqual(response.status_code, 201)
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
         self.compare_kml_contents(response, self.kml_dict["valid"])
