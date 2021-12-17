@@ -51,7 +51,7 @@ class TestPostEndpoint(BaseRouteTestCase):
             )
         self.assertEqual(response.status_code, 201)
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
-        self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
+        self.assertEqual(response.content_type, "application/json")
         self.compare_kml_contents(response, self.kml_dict["valid"])
 
     def test_invalid_kml_post(self):
