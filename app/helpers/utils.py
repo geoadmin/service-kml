@@ -205,7 +205,7 @@ def decompress_if_gzipped(file):
     except OSError as error:
         if "Not a gzipped file" in str(error):
             ret = file_content
-            logger.info("Received unzipped kml-string and zipped it: %s", file_content)
+            logger.info("Received unzipped kml-string: %s", file_content)
         else:
             logger.error("Error when trying to decompress kml file: %s", error)
             raise error
