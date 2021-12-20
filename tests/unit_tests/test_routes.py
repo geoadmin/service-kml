@@ -40,6 +40,20 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
         self.compare_kml_contents(response, self.kml_dict["valid"])
 
+    def test_valid_gzipped_kml_post(self):
+        with open('./tests/samples/valid-kml.xml.gz', 'rb') as kml_file:
+            file = {'kml': (kml_file, 'valid-kml.xml.gz', 'application/vnd.google-earth.kml+xml')}
+            response = self.app.post(
+                url_for('create_kml'),
+                data=file,
+                content_type="multipart/form-data",
+                headers=self.origin_headers["allowed"]
+            )
+        self.assertEqual(response.status_code, 201)
+        self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
+        self.assertEqual(response.content_type, "application/json")
+        self.compare_kml_contents(response, self.kml_dict["valid"])
+
     def test_invalid_kml_post(self):
         response = self.app.post(
             url_for('create_kml'),
@@ -202,6 +216,44 @@ class TestPutEndpoint(BaseRouteTestCase):
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
+        self.assertEqual(response.status_code, 200)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
+        self.assertEqual(response.content_type, "application/json")
+        for key in self.sample_kml:
+            # values for "updated" should and may differ, so ignore them in
+            # this assertion
+            if key != "updated":
+                self.assertEqual(self.sample_kml[key], response.json[key])
+
+        updated_item = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(Key={
+            'kml_id': id_to_put
+        }).get('Item', None)
+        self.assertAlmostEqual(
+            datetime.datetime.fromisoformat(updated_item["updated"]).replace(tzinfo=None),
+            datetime.datetime.utcnow(),
+            delta=timedelta(seconds=0.3)
+        )
+        self.compare_kml_contents(response, self.kml_dict["updated"])
+
+    def test_valid_gzipped_kml_put(self):
+        id_to_put = self.sample_kml['id']
+        with open('./tests/samples/updated-kml.xml.gz', 'rb') as updated_kml_file:
+            data = {
+                'admin_id':
+                    self.sample_kml['admin_id'],
+                'kml':
+                    (
+                        updated_kml_file,
+                        'updated-kml.xml.gz',
+                        'application/vnd.google-earth.kml+xml'
+                    )
+            }
+            response = self.app.put(
+                url_for('update_kml', kml_id=id_to_put),
+                data=data,
+                content_type="multipart/form-data",
+                headers=self.origin_headers["allowed"]
+            )
         self.assertEqual(response.status_code, 200)
         self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")

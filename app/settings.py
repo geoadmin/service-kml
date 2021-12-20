@@ -21,6 +21,7 @@ MB = 1024 * 1024
 KML_MAX_SIZE = int(os.getenv('KML_MAX_SIZE', str(2 * MB)))
 
 KML_FILE_CONTENT_TYPE = 'application/vnd.google-earth.kml+xml'
+KML_FILE_CONTENT_ENCODING = 'gzip'
 # No cache behavior taken from
 # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#preventing_caching
 NO_CACHE = 'no-store, max-age=0'

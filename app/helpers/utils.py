@@ -1,3 +1,4 @@
+import gzip
 import logging
 import logging.config
 import os
@@ -146,12 +147,17 @@ def validate_kml_file():
             KML_FILE_CONTENT_TYPE
         )
         abort(415, "Unsupported KML media type")
-    if 'charset' in file.mimetype_params:
-        quoted_data = file.read().decode(file.mimetype_params['charset'])
-    else:
-        quoted_data = file.read().decode('utf-8')
-
-    return validate_kml_string(unquote_plus(quoted_data))
+    file_content = decompress_if_gzipped(file)
+    try:
+        if 'charset' in file.mimetype_params:
+            quoted_data = file_content.decode(file.mimetype_params['charset'])
+        else:
+            quoted_data = file_content.decode('utf-8')
+    except UnicodeDecodeError as error:
+        logger.error("Could not decode file content: %s", error)
+        abort(400, "Could not decode file content")
+    kml_string, empty = validate_kml_string(unquote_plus(quoted_data))
+    return gzip_string(kml_string), empty
 
 
 def get_kml_file_link(file_key):
@@ -177,3 +183,30 @@ def get_registered_method(app, url_rule):
             ]
         )
     )
+
+
+def gzip_string(string):
+    try:
+        data = string.encode('utf-8')
+    except (UnicodeDecodeError, AttributeError) as error:
+        logger.error("Error when encoding string: %s", error)
+        raise error
+    gzipped_data = gzip.compress(data, compresslevel=5)
+
+    return gzipped_data
+
+
+def decompress_if_gzipped(file):
+    '''Returns the file content as bytes object, after unzipping the file if necessary'''
+
+    file_content = file.read()
+    try:
+        ret = gzip.decompress(file_content)
+    except OSError as error:
+        if "Not a gzipped file" in str(error):
+            ret = file_content
+            logger.info("Received unzipped kml-string: %s", file_content)
+        else:
+            logger.error("Error when trying to decompress kml file: %s", error)
+            raise error
+    return ret
