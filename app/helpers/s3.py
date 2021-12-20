@@ -15,6 +15,7 @@ from app.settings import AWS_S3_BUCKET_NAME
 from app.settings import AWS_S3_ENDPOINT_URL
 from app.settings import AWS_S3_REGION_NAME
 from app.settings import KML_FILE_CACHE_CONTROL
+from app.settings import KML_FILE_CONTENT_ENCODING
 from app.settings import KML_FILE_CONTENT_TYPE
 
 logger = logging.getLogger(__name__)
@@ -81,6 +82,7 @@ class S3FileHandling:
                 Bucket=AWS_S3_BUCKET_NAME,
                 Key=file_key,
                 ContentType=KML_FILE_CONTENT_TYPE,
+                ContentEncoding=KML_FILE_CONTENT_ENCODING,
                 CacheControl=KML_FILE_CACHE_CONTROL
             )
         except EndpointConnectionError as error:

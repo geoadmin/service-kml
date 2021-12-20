@@ -39,7 +39,6 @@ def checker():
 def create_kml():
     # Get the kml file data
     kml_string, empty = validate_kml_file()
-
     # Get the author
     author = request.form.get('author', 'unknown')
 
