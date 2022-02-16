@@ -13,6 +13,8 @@ from app.settings import AWS_DB_ENDPOINT_URL
 from app.settings import AWS_DB_REGION_NAME
 from app.settings import AWS_DB_TABLE_NAME
 from app.settings import AWS_S3_BUCKET_NAME
+from app.settings import KML_FILE_CONTENT_ENCODING
+from app.settings import KML_FILE_CONTENT_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +42,9 @@ class DynamoDBFilesHandler:
         self.bucket_name = bucket_name
         self.endpoint = endpoint_url
 
-    def save_item(self, kml_id, kml_admin_id, file_key, timestamp, empty=False, author=''):
+    def save_item(
+        self, kml_id, kml_admin_id, file_key, file_length, timestamp, empty=False, author=''
+    ):
         try:
             self.table.put_item(
                 Item={
@@ -51,6 +55,9 @@ class DynamoDBFilesHandler:
                     'bucket': self.bucket_name,
                     'file_key': file_key,
                     'empty': empty,
+                    'length': file_length,
+                    'encoding': KML_FILE_CONTENT_ENCODING,
+                    'content_type': KML_FILE_CONTENT_TYPE,
                     'author': author
                 }
             )
@@ -100,7 +107,7 @@ class DynamoDBFilesHandler:
 
         return items[0]
 
-    def update_item(self, kml_id, timestamp, empty):
+    def update_item(self, kml_id, file_length, timestamp, empty):
         try:
             self.table.update_item(
                 Key={'kml_id': kml_id},
@@ -110,6 +117,9 @@ class DynamoDBFilesHandler:
                     },
                     'empty': {
                         'Value': empty, 'Action': 'PUT'
+                    },
+                    'length': {
+                        'Value': file_length, 'Action': 'PUT'
                     }
                 }
             )

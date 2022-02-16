@@ -1,12 +1,14 @@
 import base64
 import datetime
 import logging
+import os
 import uuid
 from datetime import timedelta
 
 from flask import url_for
 
 from app.settings import AWS_DB_TABLE_NAME
+from app.settings import KML_FILE_CONTENT_ENCODING
 from app.settings import KML_FILE_CONTENT_TYPE
 from app.version import APP_VERSION
 from tests.unit_tests.base import BaseRouteTestCase
@@ -41,7 +43,8 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.compare_kml_contents(response, self.kml_dict["valid"])
 
     def test_valid_gzipped_kml_post(self):
-        with open('./tests/samples/valid-kml.xml.gz', 'rb') as kml_file:
+        file_path = './tests/samples/valid-kml.xml.gz'
+        with open(file_path, 'rb') as kml_file:
             file = {'kml': (kml_file, 'valid-kml.xml.gz', 'application/vnd.google-earth.kml+xml')}
             response = self.app.post(
                 url_for('create_kml'),
@@ -53,6 +56,18 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")
         self.compare_kml_contents(response, self.kml_dict["valid"])
+        # retrieve the kml DB item for checking it
+        db_response = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(
+            Key={'kml_id': response.json['id']}
+        )
+        self.assertIn('Item', db_response, msg='KML not found in DynamoDB')
+        item = db_response['Item']
+        self.assertIn('length', item)
+        self.assertEqual(int(item['length']), os.path.getsize(file_path))
+        self.assertIn('encoding', item)
+        self.assertEqual(item['encoding'], KML_FILE_CONTENT_ENCODING)
+        self.assertIn('content_type', item)
+        self.assertEqual(item['content_type'], KML_FILE_CONTENT_TYPE)
 
     def test_invalid_kml_post(self):
         response = self.app.post(
@@ -236,8 +251,9 @@ class TestPutEndpoint(BaseRouteTestCase):
         self.compare_kml_contents(response, self.kml_dict["updated"])
 
     def test_valid_gzipped_kml_put(self):
+        file_path = './tests/samples/updated-kml.xml.gz'
         id_to_put = self.sample_kml['id']
-        with open('./tests/samples/updated-kml.xml.gz', 'rb') as updated_kml_file:
+        with open(file_path, 'rb') as updated_kml_file:
             data = {
                 'admin_id':
                     self.sample_kml['admin_id'],
@@ -272,6 +288,18 @@ class TestPutEndpoint(BaseRouteTestCase):
             delta=timedelta(seconds=0.3)
         )
         self.compare_kml_contents(response, self.kml_dict["updated"])
+        # retrieve the kml DB item for checking it
+        db_response = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(
+            Key={'kml_id': response.json['id']}
+        )
+        self.assertIn('Item', db_response, msg='KML not found in DynamoDB')
+        item = db_response['Item']
+        self.assertIn('length', item)
+        self.assertEqual(int(item['length']), os.path.getsize(file_path))
+        self.assertIn('encoding', item)
+        self.assertEqual(item['encoding'], KML_FILE_CONTENT_ENCODING)
+        self.assertIn('content_type', item)
+        self.assertEqual(item['content_type'], KML_FILE_CONTENT_TYPE)
 
     def test_invalid_kml_put(self):
         id_to_put = self.sample_kml['id']
