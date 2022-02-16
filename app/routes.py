@@ -38,7 +38,7 @@ def checker():
 @validate_content_length(KML_MAX_SIZE)
 def create_kml():
     # Get the kml file data
-    kml_string, empty = validate_kml_file()
+    kml_string_gzip, empty = validate_kml_file()
     # Get the author
     author = request.form.get('author', 'unknown')
 
@@ -48,10 +48,10 @@ def create_kml():
     timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
 
     storage = get_storage()
-    storage.upload_object_to_bucket(file_key, kml_string)
+    storage.upload_object_to_bucket(file_key, kml_string_gzip)
 
     db = get_db()
-    db.save_item(kml_id, kml_admin_id, file_key, timestamp, empty, author)
+    db.save_item(kml_id, kml_admin_id, file_key, len(kml_string_gzip), timestamp, empty, author)
 
     return make_response(
         jsonify(
@@ -132,13 +132,13 @@ def update_kml(kml_id):
     admin_id = validate_permissions(item)
 
     # Get the kml file data
-    kml_string, empty = validate_kml_file()
+    kml_string_gzip, empty = validate_kml_file()
 
     storage = get_storage()
-    storage.upload_object_to_bucket(item['file_key'], kml_string)
+    storage.upload_object_to_bucket(item['file_key'], kml_string_gzip)
 
     timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
-    db.update_item(kml_id, timestamp, empty)
+    db.update_item(kml_id, len(kml_string_gzip), timestamp, empty)
 
     return make_response(
         jsonify(
