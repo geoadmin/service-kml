@@ -34,30 +34,37 @@ class CheckerTests(BaseRouteTestCase):
 class TestPostEndpoint(BaseRouteTestCase):
 
     def test_valid_kml_post(self):
-        response = self.create_test_kml()
+        kml_file = 'valid-kml.xml'
+        response = self.create_test_kml(kml_file)
         self.assertEqual(response.status_code, 201)
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
-        self.compare_kml_contents(response, self.kml_dict["valid"])
+        self.assertKml(response, kml_file)
 
     def test_valid_gzipped_kml_post(self):
-        with open('./tests/samples/valid-kml.xml.gz', 'rb') as kml_file:
-            file = {'kml': (kml_file, 'valid-kml.xml.gz', 'application/vnd.google-earth.kml+xml')}
-            response = self.app.post(
-                url_for('create_kml'),
-                data=file,
-                content_type="multipart/form-data",
-                headers=self.origin_headers["allowed"]
-            )
+        kml_file = 'valid-kml.xml.gz'
+        response = self.create_test_kml(kml_file)
         self.assertEqual(response.status_code, 201)
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
-        self.assertEqual(response.content_type, "application/json")
-        self.compare_kml_contents(response, self.kml_dict["valid"])
+        self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
+        self.assertKml(response, kml_file)
 
     def test_invalid_kml_post(self):
         response = self.app.post(
             url_for('create_kml'),
-            data=prepare_kml_payload(self.kml_dict["invalid"]),
+            data=prepare_kml_payload(kml_file='invalid-kml.xml'),
+            content_type="multipart/form-data",
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
+        self.assertEqual(response.json['error']['message'], 'Invalid kml file')
+        self.assertEqual(response.content_type, "application/json")
+
+    def test_invalid_gzipped_kml_post(self):
+        response = self.app.post(
+            url_for('create_kml'),
+            data=prepare_kml_payload(kml_file='invalid-kml.xml.gz'),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
@@ -69,7 +76,7 @@ class TestPostEndpoint(BaseRouteTestCase):
     def test_valid_kml_post_non_allowed_origin(self):
         response = self.app.post(
             url_for('create_kml'),
-            data=prepare_kml_payload(self.kml_dict["valid"]),
+            data=prepare_kml_payload(kml_file='valid-kml.xml'),
             content_type="multipart/form-data",
             headers=self.origin_headers["bad"]
         )
@@ -79,9 +86,11 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
     def test_kml_post_invalid_content_type(self):
+        with open('./tests/samples/valid-kml.xml', 'rb') as file:
+            kml_data = file.read()
         response = self.app.post(
             url_for('create_kml'),
-            data=prepare_kml_payload(self.kml_dict["valid"]),
+            data=kml_data,
             content_type=KML_FILE_CONTENT_TYPE,
             headers=self.origin_headers["allowed"]
         )
@@ -92,7 +101,7 @@ class TestPostEndpoint(BaseRouteTestCase):
 
         response = self.app.post(
             url_for('create_kml'),
-            data=prepare_kml_payload(self.kml_dict["valid"], content_type='application/json'),
+            data=prepare_kml_payload(kml_file='valid-kml.xml', content_type='application/json'),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
@@ -103,6 +112,10 @@ class TestPostEndpoint(BaseRouteTestCase):
 
 
 class TestGetEndpoint(BaseRouteTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.sample_kml = self.create_test_kml('valid-kml.xml.gz').json
 
     def test_get_metadata(self):
         id_to_fetch = self.sample_kml['id']
@@ -120,7 +133,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
-        self.compare_kml_contents(response, self.kml_dict["valid"])
+        self.assertKml(response, 'valid-kml.xml')
 
     def test_get_metadata_by_admin_id(self):
         admin_id = self.sample_kml['admin_id']
@@ -139,7 +152,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
-        self.compare_kml_contents(response, self.kml_dict["valid"])
+        self.assertKml(response, 'valid-kml.xml')
 
     def test_get_metadata_by_admin_id_invalid(self):
         response = self.app.get(
@@ -206,13 +219,16 @@ class TestGetEndpoint(BaseRouteTestCase):
 
 class TestPutEndpoint(BaseRouteTestCase):
 
+    def setUp(self):
+        super().setUp()
+        self.sample_kml = self.create_test_kml('valid-kml.xml.gz').json
+
     def test_valid_kml_put(self):
+        updated_file = 'updated-kml.xml'
         id_to_put = self.sample_kml['id']
         response = self.app.put(
             url_for('update_kml', kml_id=id_to_put),
-            data=prepare_kml_payload(
-                self.kml_dict["updated"], admin_id=self.sample_kml['admin_id']
-            ),
+            data=prepare_kml_payload(kml_file=updated_file, admin_id=self.sample_kml['admin_id']),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
@@ -233,27 +249,17 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
-        self.compare_kml_contents(response, self.kml_dict["updated"])
+        self.assertKml(response, updated_file)
 
     def test_valid_gzipped_kml_put(self):
+        updated_file = 'updated-kml.xml.gz'
         id_to_put = self.sample_kml['id']
-        with open('./tests/samples/updated-kml.xml.gz', 'rb') as updated_kml_file:
-            data = {
-                'admin_id':
-                    self.sample_kml['admin_id'],
-                'kml':
-                    (
-                        updated_kml_file,
-                        'updated-kml.xml.gz',
-                        'application/vnd.google-earth.kml+xml'
-                    )
-            }
-            response = self.app.put(
-                url_for('update_kml', kml_id=id_to_put),
-                data=data,
-                content_type="multipart/form-data",
-                headers=self.origin_headers["allowed"]
-            )
+        response = self.app.put(
+            url_for('update_kml', kml_id=id_to_put),
+            data=prepare_kml_payload(kml_file=updated_file, admin_id=self.sample_kml['admin_id']),
+            content_type="multipart/form-data",
+            headers=self.origin_headers["allowed"]
+        )
         self.assertEqual(response.status_code, 200)
         self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")
@@ -271,7 +277,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
-        self.compare_kml_contents(response, self.kml_dict["updated"])
+        self.assertKml(response, updated_file)
 
     def test_invalid_kml_put(self):
         id_to_put = self.sample_kml['id']
@@ -279,7 +285,23 @@ class TestPutEndpoint(BaseRouteTestCase):
         response = self.app.put(
             url_for('update_kml', kml_id=id_to_put),
             data=prepare_kml_payload(
-                self.kml_dict["invalid"], admin_id=self.sample_kml['admin_id']
+                kml_file='invalid-kml.xml', admin_id=self.sample_kml['admin_id']
+            ),
+            content_type="multipart/form-data",
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
+        self.assertEqual(response.json['error']['message'], 'Invalid kml file')
+        self.assertEqual(response.content_type, "application/json")
+
+    def test_invalid_gzipped_kml_put(self):
+        id_to_put = self.sample_kml['id']
+
+        response = self.app.put(
+            url_for('update_kml', kml_id=id_to_put),
+            data=prepare_kml_payload(
+                kml_file='invalid-kml.xml.gz', admin_id=self.sample_kml['admin_id']
             ),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
@@ -290,13 +312,11 @@ class TestPutEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")
 
     def test_update_non_existing_kml(self):
-
         id_to_update = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf8').replace('=', '')
-
         response = self.app.put(
             url_for('update_kml', kml_id=id_to_update),
             data=prepare_kml_payload(
-                self.kml_dict["updated"], admin_id=self.sample_kml['admin_id']
+                kml_file='updated-kml.xml', admin_id=self.sample_kml['admin_id']
             ),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
@@ -314,7 +334,7 @@ class TestPutEndpoint(BaseRouteTestCase):
         response = self.app.put(
             url_for('update_kml', kml_id=id_to_put),
             data=prepare_kml_payload(
-                self.kml_dict["updated"], admin_id=self.sample_kml['admin_id']
+                kml_file='updated-kml.xml', admin_id=self.sample_kml['admin_id']
             ),
             content_type="multipart/form-data",
             headers=self.origin_headers["bad"]
@@ -328,7 +348,7 @@ class TestPutEndpoint(BaseRouteTestCase):
         id_to_put = self.sample_kml['id']
         response = self.app.put(
             url_for('update_kml', kml_id=id_to_put),
-            data=prepare_kml_payload(self.kml_dict["updated"], admin_id='invalid-id'),
+            data=prepare_kml_payload(kml_file='updated-kml.xml', admin_id='invalid-id'),
             content_type="multipart/form-data",
             headers=self.origin_headers["bad"]
         )
@@ -341,7 +361,7 @@ class TestPutEndpoint(BaseRouteTestCase):
         id_to_put = self.sample_kml['id']
         response = self.app.put(
             url_for('update_kml', kml_id=id_to_put),
-            data=prepare_kml_payload(self.kml_dict["updated"]),
+            data=prepare_kml_payload(kml_file='updated-kml.xml'),
             content_type="multipart/form-data",
             headers=self.origin_headers["bad"]
         )
@@ -352,6 +372,10 @@ class TestPutEndpoint(BaseRouteTestCase):
 
 
 class TestDeleteEndpoint(BaseRouteTestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.sample_kml = self.create_test_kml('valid-kml.xml.gz').json
 
     def test_kml_delete(self):
         id_to_delete = self.sample_kml['id']
