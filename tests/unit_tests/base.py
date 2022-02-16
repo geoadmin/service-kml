@@ -1,5 +1,6 @@
 import io
 import logging
+import os
 import re
 import unittest
 
@@ -12,33 +13,17 @@ from botocore.exceptions import EndpointConnectionError
 
 from app import app
 from app.helpers.utils import decompress_if_gzipped
+from app.helpers.utils import gzip_string
 from app.settings import ALLOWED_DOMAINS_PATTERN
 from app.settings import AWS_DB_ENDPOINT_URL
 from app.settings import AWS_DB_REGION_NAME
 from app.settings import AWS_DB_TABLE_NAME
 from app.settings import AWS_S3_BUCKET_NAME
 from app.settings import AWS_S3_REGION_NAME
+from app.settings import KML_FILE_CONTENT_ENCODING
 from app.settings import KML_FILE_CONTENT_TYPE
 
 logger = logging.getLogger(__name__)
-
-
-def get_kml_dict():
-    '''Read the 3 kml strings from the 3 sample files
-
-    An example for a valid, an invalid and an updated kml string is provided in 3 sample files
-    in the ./tests/samples dir. These 3 files are stored in the kml_dict dictionary so they
-    can be easily used in unit tests.
-
-    Returns:
-        kml_dict: dictionary containing a valid, an invalid and an updated kml string.'''
-    kml_dict = {}
-    for kml_sample in ["valid", "invalid", "updated"]:
-        with open(f'./tests/samples/{kml_sample}-kml.xml', 'r', encoding='utf-8') as file:
-            kml_string = file.read()
-        kml_dict[kml_sample] = kml_string
-
-    return kml_dict
 
 
 def create_bucket():
@@ -99,14 +84,19 @@ def create_dynamodb():
     return dynamodb
 
 
-def prepare_kml_payload(kml_string=None, admin_id=None, content_type=KML_FILE_CONTENT_TYPE):
-    if admin_id and kml_string:
+def prepare_kml_payload(
+    kml_data=None, admin_id=None, kml_file=None, content_type=KML_FILE_CONTENT_TYPE
+):
+    author = 'unittest'
+    if kml_file and kml_data is None:
+        with open(f'./tests/samples/{kml_file}', 'rb') as file:
+            kml_data = file.read()
+    if admin_id and kml_data:
         return dict(
-            admin_id=admin_id,
-            kml=(io.BytesIO(kml_string.encode('utf-8')), 'kml.xml', content_type)
+            admin_id=admin_id, kml=(io.BytesIO(kml_data), 'kml.xml', content_type), author=author
         )
-    if kml_string:
-        return dict(kml=(io.BytesIO(kml_string.encode('utf-8')), 'kml.xml', content_type))
+    if kml_data:
+        return dict(kml=(io.BytesIO(kml_data), 'kml.xml', content_type), author=author)
     if admin_id:
         return dict(admin_id=admin_id)
     raise ValueError('No admin_id and no kml_string given')
@@ -127,7 +117,6 @@ class BaseRouteTestCase(unittest.TestCase):
                 "Origin": "big-bad-wolf.com"
             }
         }
-        cls.kml_dict = get_kml_dict()
         cls.s3bucket = create_bucket()
         cls.dynamodb = create_dynamodb()
 
@@ -140,11 +129,12 @@ class BaseRouteTestCase(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.sample_kml = self.create_test_kml().json
+        self.kmls = []
 
     def tearDown(self):
         super().tearDown()
-        self.delete_test_kml(self.sample_kml['id'], self.sample_kml['admin_id'])
+        for kml in self.kmls:
+            self.delete_test_kml(kml['id'], kml['admin_id'])
 
     def assertCors(self, response, expected_allowed_methods, check_origin=True):  # pylint: disable=invalid-name
         if check_origin:
@@ -165,14 +155,18 @@ class BaseRouteTestCase(unittest.TestCase):
         self.assertIn('Access-Control-Allow-Headers', response.headers)
         self.assertEqual(response.headers['Access-Control-Allow-Headers'], '*')
 
-    def create_test_kml(self):
+    def create_test_kml(self, file_name):
         response = self.app.post(
             url_for('create_kml'),
-            data=prepare_kml_payload(self.kml_dict["valid"]),
+            data=prepare_kml_payload(kml_file=file_name),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 201, msg="Failed to create initial kml")
+        metadata = response.json
+        self.assertIn('id', metadata)
+        self.assertIn('admin_id', metadata)
+        self.kmls.append({'id': metadata['id'], 'admin_id': metadata['admin_id']})
         return response
 
     def delete_test_kml(self, kml_id, admin_id):
@@ -184,8 +178,8 @@ class BaseRouteTestCase(unittest.TestCase):
         )
         return response
 
-    def compare_kml_contents(self, response, expected_kml):
-        '''Check content of kml on s3 bucket
+    def assertKml(self, response, expected_kml_file):
+        '''Check content of kml on s3 bucket and kml DB entry in DynamoDB.
 
         A request has created/updated a kml on s3. The corresponding response is passed to this
         method. From this the kml_id is extracted and used to retrieve the corresponding item
@@ -195,15 +189,31 @@ class BaseRouteTestCase(unittest.TestCase):
         Args:
             response: Response object
                 Response of the request, which created/updated a kml on s3.
-            expected_kml: string
-                String containing the expected content of the kml file.
+            expected_kml_file: string
+                Original kml file name.
         '''
+        expected_kml_path = f'./tests/samples/{expected_kml_file}'
+        # read the expected kml file
+        with open(expected_kml_path, 'rb') as fd:
+            expected_kml = decompress_if_gzipped(fd).decode('utf-8')
         kml_id = response.json['id']
         item = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(Key={
             'kml_id': kml_id
         }).get('Item', None)
         if item is None:
             self.fail(f"Could not find the following kml id in the database: {kml_id}")
+
+        self.assertIn('length', item)
+        expected_kml_size = os.path.getsize(expected_kml_path)
+        if expected_kml_file.endswith('.xml'):
+            # original file is not compressed get the compressed size
+            expected_kml_size = len(gzip_string(expected_kml))
+        self.assertEqual(int(item['length']), expected_kml_size)
+        self.assertIn('encoding', item)
+        self.assertEqual(item['encoding'], KML_FILE_CONTENT_ENCODING)
+        self.assertIn('content_type', item)
+        self.assertEqual(item['content_type'], KML_FILE_CONTENT_TYPE)
+        self.assertEqual(item['author'], 'unittest')
 
         try:
             obj = self.s3bucket.meta.client.get_object(
