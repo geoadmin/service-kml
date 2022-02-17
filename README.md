@@ -2,8 +2,8 @@
 
 | Branch | Status |
 |--------|-----------|
-| develop | ![Build Status](<codebuild-badge>) |
-| master | ![Build Status](<codebuild-badge>) |
+| develop | ![Build Status](https://codebuild.eu-central-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidDZJMHhkcHR5MGNRMmJkSDIzaW5JRUVxWXJtK0d4R25SWFplT3FjMlZNZDNSc21GQ3Ztd0NrbTJCQXhscVIzcU4xcVdEMHRaWDZ2YmZ0M1lseHgwVWJvPSIsIml2UGFyYW1ldGVyU3BlYyI6IjF0d3dwamZtZ2c0MkV0OUIiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop) |
+| master | ![Build Status](https://codebuild.eu-central-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidDZJMHhkcHR5MGNRMmJkSDIzaW5JRUVxWXJtK0d4R25SWFplT3FjMlZNZDNSc21GQ3Ztd0NrbTJCQXhscVIzcU4xcVdEMHRaWDZ2YmZ0M1lseHgwVWJvPSIsIml2UGFyYW1ldGVyU3BlYyI6IjF0d3dwamZtZ2c0MkV0OUIiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master) |
 
 ## Table of content
 
