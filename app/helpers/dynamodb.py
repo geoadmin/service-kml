@@ -45,6 +45,7 @@ class DynamoDBFilesHandler:
     def save_item(
         self, kml_id, kml_admin_id, file_key, file_length, timestamp, empty=False, author=''
     ):
+        logger.debug('Saving dynamodb item with primary key "%s"', kml_id)
         try:
             self.table.put_item(
                 Item={
@@ -108,6 +109,7 @@ class DynamoDBFilesHandler:
         return items[0]
 
     def update_item(self, kml_id, file_length, timestamp, empty):
+        logger.debug('Updating dynamodb item with primary key "%s"', kml_id)
         try:
             self.table.update_item(
                 Key={'kml_id': kml_id},
@@ -128,6 +130,7 @@ class DynamoDBFilesHandler:
             abort(502, 'Backend DB connection error, please consult logs')
 
     def delete_item(self, kml_id):
+        logger.debug('Deleting dynamodb item with primary key "%s"', kml_id)
         try:
             self.table.delete_item(Key={'kml_id': kml_id})
         except EndpointConnectionError as error:
