@@ -61,6 +61,7 @@ class S3FileHandling:
         return response
 
     def delete_file_in_bucket(self, file_key):
+        logger.debug("Deleting file %s from bucket %s.", file_key, AWS_S3_BUCKET_NAME)
         try:
             response = self.s3.delete_object(Bucket=AWS_S3_BUCKET_NAME, Key=file_key)
         except HTTPError as error:
