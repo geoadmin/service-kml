@@ -45,7 +45,7 @@ class DynamoDBFilesHandler:
     def save_item(
         self, kml_id, kml_admin_id, file_key, file_length, timestamp, empty=False, author=''
     ):
-        logger.debug('Saving dynamodb item with primary key "%s"', kml_id)
+        logger.debug('Saving dynamodb item with primary key %s', kml_id)
         try:
             self.table.put_item(
                 Item={
@@ -67,7 +67,7 @@ class DynamoDBFilesHandler:
             abort(502, 'Backend DB connection error, please consult logs')
 
     def get_item(self, kml_id):
-        logger.debug('Get dynamodb item with primary key "%s"', kml_id)
+        logger.debug('Get dynamodb item with primary key %s', kml_id)
         try:
             item = self.table.get_item(Key={'kml_id': kml_id}).get('Item', None)
         except EndpointConnectionError as error:
@@ -81,7 +81,7 @@ class DynamoDBFilesHandler:
         return item
 
     def get_item_by_admin_id(self, admin_id):
-        logger.debug('Get dynamodb item with admin_id "%s"', admin_id)
+        logger.debug('Get dynamodb item with admin_id %s', admin_id)
         try:
             items = self.table.query(
                 IndexName='admin_id-index',
@@ -93,9 +93,7 @@ class DynamoDBFilesHandler:
 
         if items is None or len(items) == 0:
             logger.error(
-                "Could not find the following kml admin_id '%s' in the database: %s",
-                admin_id,
-                items
+                "Could not find the following kml admin_id %s in the database: %s", admin_id, items
             )
             abort(404, f"Could not find {admin_id} within the database.")
 
@@ -109,7 +107,7 @@ class DynamoDBFilesHandler:
         return items[0]
 
     def update_item(self, kml_id, file_length, timestamp, empty):
-        logger.debug('Updating dynamodb item with primary key "%s"', kml_id)
+        logger.debug('Updating dynamodb item with primary key %s', kml_id)
         try:
             self.table.update_item(
                 Key={'kml_id': kml_id},
@@ -130,7 +128,7 @@ class DynamoDBFilesHandler:
             abort(502, 'Backend DB connection error, please consult logs')
 
     def delete_item(self, kml_id):
-        logger.debug('Deleting dynamodb item with primary key "%s"', kml_id)
+        logger.debug('Deleting dynamodb item with primary key %s', kml_id)
         try:
             self.table.delete_item(Key={'kml_id': kml_id})
         except EndpointConnectionError as error:
