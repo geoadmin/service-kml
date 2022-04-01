@@ -76,7 +76,10 @@ def create_dynamodb():
                         "ReadCapacityUnits": 1, "WriteCapacityUnits": 1
                     }
                 }
-            ]
+            ],
+            ProvisionedThroughput={
+                "ReadCapacityUnits": 1, "WriteCapacityUnits": 1
+            },
         )
     except dynamodb.meta.client.exceptions.ResourceInUseException as err:
         logger.debug("Table %s already exists but should not.", AWS_DB_TABLE_NAME)
