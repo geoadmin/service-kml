@@ -28,7 +28,7 @@ NO_CACHE = 'no-store, max-age=0'
 KML_FILE_CACHE_CONTROL = os.getenv('KML_FILE_CACHE_CONTROL', NO_CACHE)
 
 ALLOWED_DOMAINS = os.getenv('ALLOWED_DOMAINS', r'.*').split(',')
-ALLOWED_DOMAINS_PATTERN = '({})'.format('|'.join(ALLOWED_DOMAINS))
+ALLOWED_DOMAINS_PATTERN = f"({'|'.join(ALLOWED_DOMAINS)})"
 
 SCRIPT_NAME = os.getenv('SCRIPT_NAME', '')
 
