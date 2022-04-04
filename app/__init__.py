@@ -17,6 +17,7 @@ from app.settings import CACHE_CONTROL
 from app.settings import CACHE_CONTROL_4XX
 
 logger = logging.getLogger(__name__)
+logger_routes = logging.getLogger('app.routes')
 
 # Standard Flask application initialisation
 
@@ -29,7 +30,7 @@ app = Flask(__name__)
 @app.before_request
 def log_route():
     g.setdefault('request_started', time.time())
-    logger.info('%s %s', request.method, request.path)
+    logger_routes.debug('%s %s', request.method, request.path)
 
 
 # Add CORS Headers to all request
@@ -79,7 +80,7 @@ def validate_origin():
 
 @app.after_request
 def log_response(response):
-    logger.info(
+    logger_routes.info(
         "%s %s - %s",
         request.method,
         request.path,
