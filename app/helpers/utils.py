@@ -18,6 +18,7 @@ from flask import make_response
 from flask import request
 
 from app.settings import KML_FILE_CONTENT_TYPE
+from app.settings import KML_MAX_SIZE
 from app.settings import KML_STORAGE_HOST_URL
 
 logger = logging.getLogger(__name__)
@@ -78,24 +79,14 @@ def validate_content_type(content):
     return inner_decorator
 
 
-def validate_content_length(max_length):
-
-    def inner_decorator(func):
-
-        @wraps(func)
-        def wrapped(*args, **kwargs):
-            if request.content_length > max_length:
-                logger.error(
-                    'Payload too large: payload=%s MB, max_allowed=%s MB',
-                    bytes_conversion(request.content_length, 'MB'),
-                    bytes_conversion(max_length, 'MB'),
-                )
-                abort(413, "Payload too large")
-            return func(*args, **kwargs)
-
-        return wrapped
-
-    return inner_decorator
+def validate_content_length(file_content, max_length):
+    if len(file_content) > max_length:
+        logger.error(
+            'Payload too large: payload=%s MB, max_allowed=%s MB',
+            bytes_conversion(request.content_length, 'MB'),
+            bytes_conversion(max_length, 'MB'),
+        )
+        abort(413, "KML file too large")
 
 
 def validate_kml_string(kml_string):
@@ -147,7 +138,9 @@ def validate_kml_file():
             KML_FILE_CONTENT_TYPE
         )
         abort(415, "Unsupported KML media type")
-    file_content = decompress_if_gzipped(file)
+    file_content = file.read()
+    validate_content_length(file_content, KML_MAX_SIZE)
+    file_content = decompress_if_gzipped(file_content)
     try:
         if 'charset' in file.mimetype_params:
             quoted_data = file_content.decode(file.mimetype_params['charset'])
@@ -196,10 +189,9 @@ def gzip_string(string):
     return gzipped_data
 
 
-def decompress_if_gzipped(file):
+def decompress_if_gzipped(file_content):
     '''Returns the file content as bytes object, after unzipping the file if necessary'''
 
-    file_content = file.read()
     try:
         ret = gzip.decompress(file_content)
     except OSError as error:

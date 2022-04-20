@@ -14,11 +14,9 @@ from app import app
 from app.helpers.dynamodb import get_db
 from app.helpers.s3 import get_storage
 from app.helpers.utils import get_kml_file_link
-from app.helpers.utils import validate_content_length
 from app.helpers.utils import validate_content_type
 from app.helpers.utils import validate_kml_file
 from app.helpers.utils import validate_permissions
-from app.settings import KML_MAX_SIZE
 from app.settings import SCRIPT_NAME
 from app.version import APP_VERSION
 
@@ -35,7 +33,6 @@ def checker():
 
 @app.route('/admin', methods=['POST'])
 @validate_content_type("multipart/form-data")
-@validate_content_length(KML_MAX_SIZE)
 def create_kml():
     # Get the kml file data
     kml_string_gzip, empty = validate_kml_file()
@@ -124,7 +121,6 @@ def get_kml_metadata(kml_id):
 
 @app.route('/admin/<kml_id>', methods=['PUT'])
 @validate_content_type("multipart/form-data")
-@validate_content_length(KML_MAX_SIZE)
 def update_kml(kml_id):
     db = get_db()
 
