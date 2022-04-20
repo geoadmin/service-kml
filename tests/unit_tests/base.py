@@ -198,7 +198,8 @@ class BaseRouteTestCase(unittest.TestCase):
         expected_kml_path = f'./tests/samples/{expected_kml_file}'
         # read the expected kml file
         with open(expected_kml_path, 'rb') as fd:
-            expected_kml = decompress_if_gzipped(fd).decode('utf-8')
+            content = fd.read()
+            expected_kml = decompress_if_gzipped(content).decode('utf-8')
         kml_id = response.json['id']
         item = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(Key={
             'kml_id': kml_id
@@ -230,7 +231,7 @@ class BaseRouteTestCase(unittest.TestCase):
             else:
                 self.fail(f'S3 client error: {error}')
 
-        body = decompress_if_gzipped((obj['Body']))
+        body = decompress_if_gzipped((obj['Body'].read()))
         self.assertEqual(body.decode('utf-8'), expected_kml)
 
     def get_s3_object(self, file_key):

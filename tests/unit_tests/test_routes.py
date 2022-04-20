@@ -3,6 +3,7 @@ import datetime
 import logging
 import uuid
 from datetime import timedelta
+from unittest.mock import patch
 
 from flask import url_for
 
@@ -48,6 +49,19 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
         self.assertKml(response, kml_file)
+
+    @patch('app.helpers.utils.KML_MAX_SIZE', 10)
+    def test_too_big_kml_post(self):
+        kml_file = 'valid-kml.xml'
+        response = self.app.post(
+            url_for('create_kml'),
+            data=prepare_kml_payload(kml_file=kml_file),
+            content_type="multipart/form-data",
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 413)
+        self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
+        self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
 
     def test_invalid_kml_post(self):
         response = self.app.post(
