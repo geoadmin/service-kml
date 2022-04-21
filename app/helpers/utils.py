@@ -79,14 +79,40 @@ def validate_content_type(content):
     return inner_decorator
 
 
-def validate_content_length(file_content, max_length):
+def validate_content_length():
+
+    def inner_decorator(func):
+
+        @wraps(func)
+        def wrapped(*args, **kwargs):
+            # NOTE: the multipart/form-data has an unknown overhead (boundary string is set by the
+            # client), but with a 1KB overhead we are good. The goal of this check is to avoid
+            # uploading huge file which would starve the memory and rejecting them later by
+            # validate_file_length()
+            multipart_overhead = 1024
+            max_length = KML_MAX_SIZE + multipart_overhead
+            if request.content_length > max_length:
+                logger.error(
+                    'Payload too large: payload=%s MB, max_allowed=%s MB',
+                    bytes_conversion(request.content_length, 'MB'),
+                    bytes_conversion(max_length, 'MB'),
+                )
+                abort(413, f"Payload too large, max allowed={bytes_conversion(max_length, 'MB')}MB")
+            return func(*args, **kwargs)
+
+        return wrapped
+
+    return inner_decorator
+
+
+def validate_file_length(file_content, max_length):
     if len(file_content) > max_length:
         logger.error(
-            'Payload too large: payload=%s MB, max_allowed=%s MB',
+            'KML file too large: payload=%s MB, max_allowed=%s MB',
             bytes_conversion(request.content_length, 'MB'),
             bytes_conversion(max_length, 'MB'),
         )
-        abort(413, "KML file too large")
+        abort(413, f"KML file too large, max allowed={bytes_conversion(max_length, 'MB')}MB")
 
 
 def validate_kml_string(kml_string):
@@ -139,7 +165,7 @@ def validate_kml_file():
         )
         abort(415, "Unsupported KML media type")
     file_content = file.read()
-    validate_content_length(file_content, KML_MAX_SIZE)
+    validate_file_length(file_content, KML_MAX_SIZE)
     file_content = decompress_if_gzipped(file_content)
     try:
         if 'charset' in file.mimetype_params:
