@@ -44,7 +44,7 @@ def create_kml():
     kml_admin_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
     kml_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
     file_key = f'{SCRIPT_NAME}/files/{kml_id}'.lstrip('/')
-    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(timespec='milliseconds')
 
     storage = get_storage()
     storage.upload_object_to_bucket(file_key, kml_string_gzip)
@@ -136,7 +136,7 @@ def update_kml(kml_id):
     storage = get_storage()
     storage.upload_object_to_bucket(item['file_key'], kml_string_gzip)
 
-    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat()
+    timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(timespec='milliseconds')
     db.update_item(kml_id, len(kml_string_gzip), timestamp, empty)
 
     return make_response(
