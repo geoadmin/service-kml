@@ -1,5 +1,4 @@
-# Buster slim python 3.7 base image.
-FROM python:3.7-slim-buster
+FROM python:3.9-slim-buster
 RUN groupadd -r geoadmin && useradd -u 1000 -r -s /bin/false -g geoadmin geoadmin
 
 
