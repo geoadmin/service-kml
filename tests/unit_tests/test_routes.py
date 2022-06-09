@@ -95,7 +95,7 @@ class TestPostEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
-        self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'], check_origin=False)
+        self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -223,7 +223,7 @@ class TestGetEndpoint(BaseRouteTestCase):
             url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
-        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'], check_origin=False)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertIn('Cache-Control', response.headers)
         self.assertIn('max-age=3600', response.headers['Cache-Control'])
         self.assertNotIn('Expire', response.headers)
@@ -354,7 +354,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
-        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'], check_origin=False)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -367,7 +367,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
-        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'], check_origin=False)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -380,7 +380,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
-        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'], check_origin=False)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -442,7 +442,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["bad"]
         )
         self.assertEqual(response.status_code, 403)
-        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'], check_origin=False)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -456,7 +456,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 403)
-        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'], check_origin=False)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
@@ -469,7 +469,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 403)
-        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'], check_origin=False)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
 
