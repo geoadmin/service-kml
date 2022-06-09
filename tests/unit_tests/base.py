@@ -139,12 +139,13 @@ class BaseRouteTestCase(unittest.TestCase):
         for kml in self.kmls:
             self.delete_test_kml(kml['id'], kml['admin_id'])
 
-    def assertCors(self, response, expected_allowed_methods, check_origin=True):  # pylint: disable=invalid-name
-        if check_origin:
-            self.assertIn('Access-Control-Allow-Origin', response.headers)
-            self.assertTrue(
-                re.match(ALLOWED_DOMAINS_PATTERN, response.headers['Access-Control-Allow-Origin'])
-            )
+    def assertCors(self, response, expected_allowed_methods):  # pylint: disable=invalid-name
+        self.assertIn('Access-Control-Allow-Origin', response.headers)
+        self.assertIsNotNone(
+            re.match(ALLOWED_DOMAINS_PATTERN, response.headers['Access-Control-Allow-Origin']),
+            msg=f"Access-Control-Allow-Origin={response.headers['Access-Control-Allow-Origin']} "
+            f"doesn't match {ALLOWED_DOMAINS_PATTERN}"
+        )
         self.assertIn('Access-Control-Allow-Methods', response.headers)
         self.assertListEqual(
             sorted(expected_allowed_methods),
