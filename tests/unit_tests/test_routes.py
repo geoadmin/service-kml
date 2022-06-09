@@ -5,6 +5,8 @@ import uuid
 from datetime import timedelta
 from unittest.mock import patch
 
+from nose2.tools import params
+
 from flask import url_for
 
 from app.settings import AWS_DB_TABLE_NAME
@@ -229,6 +231,50 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertNotIn('Expire', response.headers)
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(response.json["error"]["message"], "Permission denied")
+
+    @params(
+        None,
+        {'Origin': 'www.example'},
+        {
+            'Origin': 'www.example', 'Sec-Fetch-Site': 'cross-site'
+        },
+        {
+            'Origin': 'www.example', 'Sec-Fetch-Site': 'same-site'
+        },
+        {
+            'Origin': 'www.example', 'Sec-Fetch-Site': 'same-origin'
+        },
+        {
+            'Referer': 'http://www.example',
+        },
+    )
+    def test_get_metadata_origin_not_allowed(self, headers):
+        id_to_fetch = self.sample_kml['id']
+        response = self.app.get(url_for('get_kml_metadata', kml_id=id_to_fetch), headers=headers)
+        self.assertEqual(response.status_code, 403)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
+
+    @params(
+        {'Origin': 'map.geo.admin.ch'},
+        {
+            'Origin': 'map.geo.admin.ch', 'Sec-Fetch-Site': 'same-site'
+        },
+        {
+            'Origin': 'public.geo.admin.ch', 'Sec-Fetch-Site': 'same-origin'
+        },
+        {
+            'Origin': 'http://localhost', 'Sec-Fetch-Site': 'cross-site'
+        },
+        {'Sec-Fetch-Site': 'same-origin'},
+        {
+            'Referer': 'https://map.geo.admin.ch',
+        },
+    )
+    def test_get_metadata_origin_allowed(self, headers):
+        id_to_fetch = self.sample_kml['id']
+        response = self.app.get(url_for('get_kml_metadata', kml_id=id_to_fetch), headers=headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
 
 
 class TestPutEndpoint(BaseRouteTestCase):
