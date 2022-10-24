@@ -88,21 +88,33 @@ def create_dynamodb():
 
 
 def prepare_kml_payload(
-    kml_data=None, admin_id=None, kml_file=None, content_type=KML_FILE_CONTENT_TYPE
+    kml_data=None,
+    admin_id=None,
+    kml_file=None,
+    content_type=KML_FILE_CONTENT_TYPE,
+    author=None,
+    client_version=None
 ):
-    author = 'unittest'
+    data = None
+    if author is None:
+        author = 'unittest'
     if kml_file and kml_data is None:
         with open(f'./tests/samples/{kml_file}', 'rb') as file:
             kml_data = file.read()
     if admin_id and kml_data:
-        return dict(
+        data = dict(
             admin_id=admin_id, kml=(io.BytesIO(kml_data), 'kml.xml', content_type), author=author
         )
-    if kml_data:
-        return dict(kml=(io.BytesIO(kml_data), 'kml.xml', content_type), author=author)
-    if admin_id:
-        return dict(admin_id=admin_id)
-    raise ValueError('No admin_id and no kml_string given')
+    elif kml_data:
+        data = dict(kml=(io.BytesIO(kml_data), 'kml.xml', content_type), author=author)
+    elif admin_id:
+        data = dict(admin_id=admin_id)
+    else:
+        raise ValueError('No admin_id and no kml_string given')
+
+    if client_version:
+        data['client_version'] = client_version
+    return data
 
 
 class BaseRouteTestCase(unittest.TestCase):
@@ -159,10 +171,12 @@ class BaseRouteTestCase(unittest.TestCase):
         self.assertIn('Access-Control-Allow-Headers', response.headers)
         self.assertEqual(response.headers['Access-Control-Allow-Headers'], '*')
 
-    def create_test_kml(self, file_name):
+    def create_test_kml(self, file_name, author=None, client_version=None):
         response = self.app.post(
             url_for('create_kml'),
-            data=prepare_kml_payload(kml_file=file_name),
+            data=prepare_kml_payload(
+                kml_file=file_name, author=author, client_version=client_version
+            ),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
         )
@@ -182,7 +196,7 @@ class BaseRouteTestCase(unittest.TestCase):
         )
         return response
 
-    def assertKml(self, response, expected_kml_file):
+    def assertKml(self, response, expected_kml_file, author='unittest', with_admin_id=False):
         '''Check content of kml on s3 bucket and kml DB entry in DynamoDB.
 
         A request has created/updated a kml on s3. The corresponding response is passed to this
@@ -196,6 +210,7 @@ class BaseRouteTestCase(unittest.TestCase):
             expected_kml_file: string
                 Original kml file name.
         '''
+        self.assertKmlMetadata(response.json, with_admin_id=with_admin_id)
         expected_kml_path = f'./tests/samples/{expected_kml_file}'
         # read the expected kml file
         with open(expected_kml_path, 'rb') as fd:
@@ -218,7 +233,7 @@ class BaseRouteTestCase(unittest.TestCase):
         self.assertEqual(item['encoding'], KML_FILE_CONTENT_ENCODING)
         self.assertIn('content_type', item)
         self.assertEqual(item['content_type'], KML_FILE_CONTENT_TYPE)
-        self.assertEqual(item['author'], 'unittest')
+        self.assertEqual(item['author'], author)
 
         try:
             obj = self.s3bucket.meta.client.get_object(
@@ -234,6 +249,13 @@ class BaseRouteTestCase(unittest.TestCase):
 
         body = decompress_if_gzipped((obj['Body'].read()))
         self.assertEqual(body.decode('utf-8'), expected_kml)
+
+    def assertKmlMetadata(self, data, with_admin_id=False):
+        expected_keys = ['id', 'success', 'created', 'updated', 'empty', 'client_version', 'links']
+        if with_admin_id:
+            expected_keys.append('admin_id')
+        self.assertListEqual(sorted(list(data.keys())), sorted(expected_keys))
+        self.assertListEqual(sorted(data['links'].keys()), sorted(['self', 'kml']))
 
     def get_s3_object(self, file_key):
         try:

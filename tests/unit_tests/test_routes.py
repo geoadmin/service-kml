@@ -9,7 +9,7 @@ from nose2.tools import params
 
 from flask import url_for
 
-from app.settings import AWS_DB_TABLE_NAME
+from app.settings import AWS_DB_TABLE_NAME, DEFAULT_CLIENT_VERSION
 from app.settings import KML_FILE_CONTENT_TYPE
 from app.version import APP_VERSION
 from tests.unit_tests.base import BaseRouteTestCase
@@ -42,7 +42,26 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertEqual(response.status_code, 201)
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
-        self.assertKml(response, kml_file)
+        self.assertKml(response, kml_file, with_admin_id=True)
+        self.assertEqual(response.json['client_version'], DEFAULT_CLIENT_VERSION)
+
+    def test_valid_kml_post_author(self):
+        kml_file = 'valid-kml.xml'
+        response = self.create_test_kml(kml_file, author='My author for unittest')
+        self.assertEqual(response.status_code, 201)
+        self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
+        self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
+        self.assertKml(response, kml_file, author='My author for unittest', with_admin_id=True)
+        self.assertEqual(response.json['client_version'], DEFAULT_CLIENT_VERSION)
+
+    def test_valid_kml_post_client_version(self):
+        kml_file = 'valid-kml.xml'
+        response = self.create_test_kml(kml_file, client_version='1.0.0')
+        self.assertEqual(response.status_code, 201)
+        self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
+        self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
+        self.assertKml(response, kml_file, with_admin_id=True)
+        self.assertEqual(response.json['client_version'], '1.0.0')
 
     def test_valid_gzipped_kml_post(self):
         kml_file = 'valid-kml.xml.gz'
@@ -50,7 +69,7 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertEqual(response.status_code, 201)
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
-        self.assertKml(response, kml_file)
+        self.assertKml(response, kml_file, with_admin_id=True)
 
     @patch('app.helpers.utils.KML_MAX_SIZE', 10)
     def test_too_big_kml_post(self):
@@ -150,6 +169,28 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
         self.assertKml(response, 'valid-kml.xml')
+        self.assertEqual(response.json['client_version'], '0.0.0')
+
+    def test_get_metadata_client_version(self):
+        sample_kml = self.create_test_kml('valid-kml.xml.gz', client_version='1.1.1').json
+
+        id_to_fetch = sample_kml['id']
+        stored_geoadmin_link = sample_kml['links']['kml']
+        stored_kml_admin_link = sample_kml['links']['self']
+        response = self.app.get(
+            url_for('get_kml_metadata', kml_id=id_to_fetch), headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
+        self.assertIn('Cache-Control', response.headers)
+        self.assertIn('no-cache', response.headers['Cache-Control'])
+        self.assertIn('Expire', response.headers)
+        self.assertEqual(response.headers['Expire'], '0')
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
+        self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
+        self.assertKml(response, 'valid-kml.xml')
+        self.assertEqual(response.json['client_version'], '1.1.1')
 
     def test_get_metadata_by_admin_id(self):
         admin_id = self.sample_kml['admin_id']
@@ -168,7 +209,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
-        self.assertKml(response, 'valid-kml.xml')
+        self.assertKml(response, 'valid-kml.xml', with_admin_id=True)
 
     def test_get_metadata_by_admin_id_invalid(self):
         response = self.app.get(
@@ -309,7 +350,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
-        self.assertKml(response, updated_file)
+        self.assertKml(response, updated_file, with_admin_id=True)
 
     def test_valid_gzipped_kml_put(self):
         updated_file = 'updated-kml.xml.gz'
@@ -337,7 +378,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
-        self.assertKml(response, updated_file)
+        self.assertKml(response, updated_file, with_admin_id=True)
 
     def test_invalid_kml_put(self):
         id_to_put = self.sample_kml['id']
