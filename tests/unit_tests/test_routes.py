@@ -52,13 +52,13 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
         self.assertKml(response, kml_file, author='My author for unittest', with_admin_id=True)
 
-    def test_valid_kml_post_client_version(self):
+    def test_valid_kml_post_author_version(self):
         kml_file = 'valid-kml.xml'
-        response = self.create_test_kml(kml_file, client_version='1.0.0')
+        response = self.create_test_kml(kml_file, author_version='1.0.0')
         self.assertEqual(response.status_code, 201)
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
-        self.assertKml(response, kml_file, with_admin_id=True, client_version='1.0.0')
+        self.assertKml(response, kml_file, with_admin_id=True, author_version='1.0.0')
 
     def test_valid_gzipped_kml_post(self):
         kml_file = 'valid-kml.xml.gz'
@@ -167,8 +167,8 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
         self.assertKml(response, 'valid-kml.xml')
 
-    def test_get_metadata_client_version(self):
-        sample_kml = self.create_test_kml('valid-kml.xml.gz', client_version='1.1.1').json
+    def test_get_metadata_author_version(self):
+        sample_kml = self.create_test_kml('valid-kml.xml.gz', author_version='1.1.1').json
 
         id_to_fetch = sample_kml['id']
         stored_geoadmin_link = sample_kml['links']['kml']
@@ -185,7 +185,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
-        self.assertKml(response, 'valid-kml.xml', client_version='1.1.1')
+        self.assertKml(response, 'valid-kml.xml', author_version='1.1.1')
 
     def test_get_metadata_by_admin_id(self):
         admin_id = self.sample_kml['admin_id']
@@ -347,13 +347,13 @@ class TestPutEndpoint(BaseRouteTestCase):
         )
         self.assertKml(response, updated_file, with_admin_id=True)
 
-    def test_valid_kml_put_update_client_version(self):
+    def test_valid_kml_put_update_author_version(self):
         updated_file = 'updated-kml.xml'
         id_to_put = self.sample_kml['id']
         response = self.app.put(
             url_for('update_kml', kml_id=id_to_put),
             data=prepare_kml_payload(
-                kml_file=updated_file, admin_id=self.sample_kml['admin_id'], client_version='1.1.1'
+                kml_file=updated_file, admin_id=self.sample_kml['admin_id'], author_version='1.1.1'
             ),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
@@ -364,7 +364,7 @@ class TestPutEndpoint(BaseRouteTestCase):
         for key in self.sample_kml:
             # values for "updated" should and may differ, so ignore them in
             # this assertion
-            if key == 'client_version':
+            if key == 'author_version':
                 self.assertNotEqual(self.sample_kml[key], response.json[key])
                 self.assertEqual(response.json[key], '1.1.1')
             elif key != "updated":
@@ -378,7 +378,7 @@ class TestPutEndpoint(BaseRouteTestCase):
             datetime.datetime.utcnow(),
             delta=timedelta(seconds=0.3)
         )
-        self.assertKml(response, updated_file, with_admin_id=True, client_version='1.1.1')
+        self.assertKml(response, updated_file, with_admin_id=True, author_version='1.1.1')
 
     def test_valid_gzipped_kml_put(self):
         updated_file = 'updated-kml.xml.gz'

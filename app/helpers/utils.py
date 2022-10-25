@@ -240,7 +240,7 @@ def get_json_metadata(db_item, with_admin_id=False):
         'created': db_item['created'],
         'updated': db_item['updated'],
         'empty': db_item['empty'],
-        'client_version': db_item.get('client_version', DEFAULT_CLIENT_VERSION),
+        'author_version': db_item.get('author_version', DEFAULT_CLIENT_VERSION),
         'links':
             {
                 'self': url_for('get_kml_metadata', kml_id=db_item['kml_id'], _external=True),

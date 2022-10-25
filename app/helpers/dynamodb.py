@@ -52,7 +52,7 @@ class DynamoDBFilesHandler:
         timestamp,
         empty=False,
         author='',
-        client_version=DEFAULT_CLIENT_VERSION
+        author_version=DEFAULT_CLIENT_VERSION
     ):
         logger.debug('Saving dynamodb item with primary key %s', kml_id)
         db_item = {
@@ -67,7 +67,7 @@ class DynamoDBFilesHandler:
             'encoding': KML_FILE_CONTENT_ENCODING,
             'content_type': KML_FILE_CONTENT_TYPE,
             'author': author,
-            'client_version': client_version
+            'author_version': author_version
         }
         try:
             self.table.put_item(Item=db_item)
@@ -116,7 +116,7 @@ class DynamoDBFilesHandler:
 
         return items[0]
 
-    def update_item(self, kml_id, db_item, file_length, timestamp, empty, client_version=None):
+    def update_item(self, kml_id, db_item, file_length, timestamp, empty, author_version=None):
         logger.debug('Updating dynamodb item with primary key %s', kml_id)
         db_item['updated'] = timestamp
         db_item['empty'] = empty
@@ -132,9 +132,9 @@ class DynamoDBFilesHandler:
                 'Value': file_length, 'Action': 'PUT'
             }
         }
-        if client_version is not None:
-            attribute_updates['client_version'] = {'Value': client_version, 'Action': 'PUT'}
-            db_item['client_version'] = client_version
+        if author_version is not None:
+            attribute_updates['author_version'] = {'Value': author_version, 'Action': 'PUT'}
+            db_item['author_version'] = author_version
         try:
             self.table.update_item(Key={'kml_id': kml_id}, AttributeUpdates=attribute_updates)
         except EndpointConnectionError as error:

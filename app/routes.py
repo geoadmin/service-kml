@@ -41,7 +41,7 @@ def create_kml():
     # Get the author
     author = request.form.get('author', 'unknown')
     # Get the client version
-    client_version = request.form.get('client_version', DEFAULT_CLIENT_VERSION)
+    author_version = request.form.get('author_version', DEFAULT_CLIENT_VERSION)
 
     kml_admin_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
     kml_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
@@ -60,7 +60,7 @@ def create_kml():
         timestamp,
         empty,
         author,
-        client_version
+        author_version
     )
 
     return make_response(jsonify(get_json_metadata(db_item, with_admin_id=True)), 201)
@@ -92,7 +92,7 @@ def update_kml(kml_id):
     admin_id = validate_permissions(db_item)
 
     # Get the client version
-    client_version = request.form.get('client_version', None)
+    author_version = request.form.get('author_version', None)
 
     # Get the kml file data
     kml_string_gzip, empty = validate_kml_file()
@@ -102,7 +102,7 @@ def update_kml(kml_id):
 
     timestamp = datetime.utcnow().replace(tzinfo=timezone.utc).isoformat(timespec='milliseconds')
     db_item = db.update_item(
-        kml_id, db_item, len(kml_string_gzip), timestamp, empty, client_version
+        kml_id, db_item, len(kml_string_gzip), timestamp, empty, author_version
     )
 
     return make_response(jsonify(get_json_metadata(db_item, with_admin_id=True)), 200)

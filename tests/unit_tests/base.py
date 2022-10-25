@@ -94,7 +94,7 @@ def prepare_kml_payload(
     kml_file=None,
     content_type=KML_FILE_CONTENT_TYPE,
     author=None,
-    client_version=None
+    author_version=None
 ):
     data = None
     if author is None:
@@ -113,8 +113,8 @@ def prepare_kml_payload(
     else:
         raise ValueError('No admin_id and no kml_string given')
 
-    if client_version:
-        data['client_version'] = client_version
+    if author_version:
+        data['author_version'] = author_version
     return data
 
 
@@ -172,11 +172,11 @@ class BaseRouteTestCase(unittest.TestCase):
         self.assertIn('Access-Control-Allow-Headers', response.headers)
         self.assertEqual(response.headers['Access-Control-Allow-Headers'], '*')
 
-    def create_test_kml(self, file_name, author=None, client_version=None):
+    def create_test_kml(self, file_name, author=None, author_version=None):
         response = self.app.post(
             url_for('create_kml'),
             data=prepare_kml_payload(
-                kml_file=file_name, author=author, client_version=client_version
+                kml_file=file_name, author=author, author_version=author_version
             ),
             content_type="multipart/form-data",
             headers=self.origin_headers["allowed"]
@@ -203,7 +203,7 @@ class BaseRouteTestCase(unittest.TestCase):
         expected_kml_file,
         author='unittest',
         with_admin_id=False,
-        client_version=DEFAULT_CLIENT_VERSION
+        author_version=DEFAULT_CLIENT_VERSION
     ):
         '''Check content of kml on s3 bucket and kml DB entry in DynamoDB.
 
@@ -219,12 +219,12 @@ class BaseRouteTestCase(unittest.TestCase):
                 Original kml file name.
         '''
         self.assertKmlMetadata(
-            response.json, with_admin_id=with_admin_id, client_version=client_version
+            response.json, with_admin_id=with_admin_id, author_version=author_version
         )
         db_item = self.assertKmlInDb(response)
         self.assertKmlFile(response, expected_kml_file, db_item)
         expected_kml_size = self.assertKmlFile(response, expected_kml_file, db_item)
-        self.assertKmlDbData(response, db_item, expected_kml_size, author, client_version)
+        self.assertKmlDbData(response, db_item, expected_kml_size, author, author_version)
 
     def assertKmlFile(self, response, expected_kml_file, db_item):
         expected_kml_path = f'./tests/samples/{expected_kml_file}'
@@ -262,7 +262,7 @@ class BaseRouteTestCase(unittest.TestCase):
             self.fail(f"Could not find the following kml id in the database: {response.json['id']}")
         return db_item
 
-    def assertKmlDbData(self, response, db_item, expected_kml_size, author, client_version=None):
+    def assertKmlDbData(self, response, db_item, expected_kml_size, author, author_version=None):
         self.assertIn('length', db_item)
         self.assertEqual(int(db_item['length']), expected_kml_size)
         self.assertIn('encoding', db_item)
@@ -270,19 +270,19 @@ class BaseRouteTestCase(unittest.TestCase):
         self.assertIn('content_type', db_item)
         self.assertEqual(db_item['content_type'], KML_FILE_CONTENT_TYPE)
         self.assertEqual(db_item['author'], author)
-        if client_version is not None:
+        if author_version is not None:
             self.assertEqual(
-                db_item['client_version'], client_version, msg="Wrong client_version in DB"
+                db_item['author_version'], author_version, msg="Wrong author_version in DB"
             )
 
-    def assertKmlMetadata(self, data, with_admin_id=False, client_version=None):
-        expected_keys = ['id', 'success', 'created', 'updated', 'empty', 'client_version', 'links']
+    def assertKmlMetadata(self, data, with_admin_id=False, author_version=None):
+        expected_keys = ['id', 'success', 'created', 'updated', 'empty', 'author_version', 'links']
         if with_admin_id:
             expected_keys.append('admin_id')
         self.assertListEqual(sorted(list(data.keys())), sorted(expected_keys))
         self.assertListEqual(sorted(data['links'].keys()), sorted(['self', 'kml']))
-        if client_version is not None:
-            self.assertEqual(data['client_version'], client_version, msg="Wrong client_version")
+        if author_version is not None:
+            self.assertEqual(data['author_version'], author_version, msg="Wrong author_version")
 
     def get_s3_object(self, file_key):
         try:
