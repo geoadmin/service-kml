@@ -20,7 +20,7 @@ from app.settings import AWS_DB_REGION_NAME
 from app.settings import AWS_DB_TABLE_NAME
 from app.settings import AWS_S3_BUCKET_NAME
 from app.settings import AWS_S3_REGION_NAME
-from app.settings import DEFAULT_CLIENT_VERSION
+from app.settings import DEFAULT_AUTHOR_VERSION
 from app.settings import KML_FILE_CONTENT_ENCODING
 from app.settings import KML_FILE_CONTENT_TYPE
 
@@ -96,24 +96,22 @@ def prepare_kml_payload(
     author=None,
     author_version=None
 ):
-    data = None
-    if author is None:
-        author = 'unittest'
     if kml_file and kml_data is None:
         with open(f'./tests/samples/{kml_file}', 'rb') as file:
             kml_data = file.read()
     if admin_id and kml_data:
-        data = dict(
-            admin_id=admin_id, kml=(io.BytesIO(kml_data), 'kml.xml', content_type), author=author
-        )
+        data = dict(admin_id=admin_id, kml=(io.BytesIO(kml_data), 'kml.xml', content_type))
     elif kml_data:
-        data = dict(kml=(io.BytesIO(kml_data), 'kml.xml', content_type), author=author)
+        data = dict(kml=(io.BytesIO(kml_data), 'kml.xml', content_type))
     elif admin_id:
         data = dict(admin_id=admin_id)
     else:
         raise ValueError('No admin_id and no kml_string given')
 
-    if author_version:
+    if author is not None:
+        data['author'] = author
+
+    if author_version is not None:
         data['author_version'] = author_version
     return data
 
@@ -201,9 +199,9 @@ class BaseRouteTestCase(unittest.TestCase):
         self,
         response,
         expected_kml_file,
-        author='unittest',
+        author="mf-geoadmin3",
         with_admin_id=False,
-        author_version=DEFAULT_CLIENT_VERSION
+        author_version=DEFAULT_AUTHOR_VERSION
     ):
         '''Check content of kml on s3 bucket and kml DB entry in DynamoDB.
 
@@ -219,7 +217,10 @@ class BaseRouteTestCase(unittest.TestCase):
                 Original kml file name.
         '''
         self.assertKmlMetadata(
-            response.json, with_admin_id=with_admin_id, author_version=author_version
+            response.json,
+            author=author,
+            with_admin_id=with_admin_id,
+            author_version=author_version
         )
         db_item = self.assertKmlInDb(response)
         self.assertKmlFile(response, expected_kml_file, db_item)
@@ -275,14 +276,20 @@ class BaseRouteTestCase(unittest.TestCase):
                 db_item['author_version'], author_version, msg="Wrong author_version in DB"
             )
 
-    def assertKmlMetadata(self, data, with_admin_id=False, author_version=None):
-        expected_keys = ['id', 'success', 'created', 'updated', 'empty', 'author_version', 'links']
+    def assertKmlMetadata(self, data, author=None, with_admin_id=False, author_version=None):
+        expected_keys = [
+            'id', 'success', 'created', 'updated', 'empty', 'author', 'author_version', 'links'
+        ]
         if with_admin_id:
             expected_keys.append('admin_id')
         self.assertListEqual(sorted(list(data.keys())), sorted(expected_keys))
         self.assertListEqual(sorted(data['links'].keys()), sorted(['self', 'kml']))
+        if author is not None:
+            self.assertEqual(data['author'], author, msg="Wrong author in response")
         if author_version is not None:
-            self.assertEqual(data['author_version'], author_version, msg="Wrong author_version")
+            self.assertEqual(
+                data['author_version'], author_version, msg="Wrong author_version in response"
+            )
 
     def get_s3_object(self, file_key):
         try:

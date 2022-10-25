@@ -18,7 +18,7 @@ from flask import make_response
 from flask import request
 from flask.helpers import url_for
 
-from app.settings import DEFAULT_CLIENT_VERSION
+from app.settings import DEFAULT_AUTHOR_VERSION
 from app.settings import KML_FILE_CONTENT_TYPE
 from app.settings import KML_MAX_SIZE
 from app.settings import KML_STORAGE_HOST_URL
@@ -181,6 +181,13 @@ def validate_kml_file():
     return gzip_string(kml_string), empty
 
 
+def validate_author():
+    author = request.form.get('author', None)
+    if author is None:
+        abort(400, "Missing author field")
+    return author
+
+
 def get_kml_file_link(file_key):
     if KML_STORAGE_HOST_URL:
         return f'{KML_STORAGE_HOST_URL}/{file_key}'
@@ -240,7 +247,8 @@ def get_json_metadata(db_item, with_admin_id=False):
         'created': db_item['created'],
         'updated': db_item['updated'],
         'empty': db_item['empty'],
-        'author_version': db_item.get('author_version', DEFAULT_CLIENT_VERSION),
+        'author': db_item['author'],
+        'author_version': db_item.get('author_version', DEFAULT_AUTHOR_VERSION),
         'links':
             {
                 'self': url_for('get_kml_metadata', kml_id=db_item['kml_id'], _external=True),

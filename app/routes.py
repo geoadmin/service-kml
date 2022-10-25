@@ -13,11 +13,12 @@ from app import app
 from app.helpers.dynamodb import get_db
 from app.helpers.s3 import get_storage
 from app.helpers.utils import get_json_metadata
+from app.helpers.utils import validate_author
 from app.helpers.utils import validate_content_length
 from app.helpers.utils import validate_content_type
 from app.helpers.utils import validate_kml_file
 from app.helpers.utils import validate_permissions
-from app.settings import DEFAULT_CLIENT_VERSION
+from app.settings import DEFAULT_AUTHOR_VERSION
 from app.settings import SCRIPT_NAME
 from app.version import APP_VERSION
 
@@ -39,9 +40,9 @@ def create_kml():
     # Get the kml file data
     kml_string_gzip, empty = validate_kml_file()
     # Get the author
-    author = request.form.get('author', 'unknown')
+    author = validate_author()
     # Get the client version
-    author_version = request.form.get('author_version', DEFAULT_CLIENT_VERSION)
+    author_version = request.form.get('author_version', DEFAULT_AUTHOR_VERSION)
 
     kml_admin_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
     kml_id = urlsafe_b64encode(uuid4().bytes).decode('utf8').replace('=', '')
