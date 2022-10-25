@@ -13,7 +13,6 @@ from app.settings import AWS_DB_ENDPOINT_URL
 from app.settings import AWS_DB_REGION_NAME
 from app.settings import AWS_DB_TABLE_NAME
 from app.settings import AWS_S3_BUCKET_NAME
-from app.settings import DEFAULT_AUTHOR_VERSION
 from app.settings import KML_FILE_CONTENT_ENCODING
 from app.settings import KML_FILE_CONTENT_TYPE
 
@@ -44,15 +43,7 @@ class DynamoDBFilesHandler:
         self.endpoint = endpoint_url
 
     def save_item(
-        self,
-        kml_id,
-        kml_admin_id,
-        file_key,
-        file_length,
-        timestamp,
-        empty=False,
-        author='',
-        author_version=DEFAULT_AUTHOR_VERSION
+        self, kml_id, kml_admin_id, file_key, file_length, timestamp, author, author_version, empty
     ):
         logger.debug('Saving dynamodb item with primary key %s', kml_id)
         db_item = {

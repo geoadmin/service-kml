@@ -59,9 +59,9 @@ def create_kml():
         file_key,
         len(kml_string_gzip),
         timestamp,
-        empty,
         author,
-        author_version
+        author_version,
+        empty
     )
 
     return make_response(jsonify(get_json_metadata(db_item, with_admin_id=True)), 201)
