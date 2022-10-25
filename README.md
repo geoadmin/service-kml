@@ -216,3 +216,4 @@ The service is configured by Environment Variable:
 | SCRIPT_NAME | `''` | If the service is behind a reverse proxy and not served at the root, the route prefix must be set in `SCRIPT_NAME`. |
 | CACHE_CONTROL | `no-cache, no-store, must-revalidate` | Cache Control header value of the GET endpoint(s) |
 | CACHE_CONTROL_4XX | `public, max-age=3600` | Cache Control header for 4XX responses |
+| GUNICORN_WORKER_TMP_DIR | `/tmp/gunicorn_workers` | Gunicorn worker tmp directory. :warning: This directory should be on **TMPFS** for better performance. |

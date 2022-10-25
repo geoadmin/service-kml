@@ -43,28 +43,29 @@ class DynamoDBFilesHandler:
         self.endpoint = endpoint_url
 
     def save_item(
-        self, kml_id, kml_admin_id, file_key, file_length, timestamp, empty=False, author=''
+        self, kml_id, kml_admin_id, file_key, file_length, timestamp, author, author_version, empty
     ):
         logger.debug('Saving dynamodb item with primary key %s', kml_id)
+        db_item = {
+            'kml_id': kml_id,
+            'admin_id': kml_admin_id,
+            'created': timestamp,
+            'updated': timestamp,
+            'bucket': self.bucket_name,
+            'file_key': file_key,
+            'empty': empty,
+            'length': file_length,
+            'encoding': KML_FILE_CONTENT_ENCODING,
+            'content_type': KML_FILE_CONTENT_TYPE,
+            'author': author,
+            'author_version': author_version
+        }
         try:
-            self.table.put_item(
-                Item={
-                    'kml_id': kml_id,
-                    'admin_id': kml_admin_id,
-                    'created': timestamp,
-                    'updated': timestamp,
-                    'bucket': self.bucket_name,
-                    'file_key': file_key,
-                    'empty': empty,
-                    'length': file_length,
-                    'encoding': KML_FILE_CONTENT_ENCODING,
-                    'content_type': KML_FILE_CONTENT_TYPE,
-                    'author': author
-                }
-            )
+            self.table.put_item(Item=db_item)
         except EndpointConnectionError as error:
             logger.exception('Failed to connect to DynamoDB: %s', error)
             abort(502, 'Backend DB connection error, please consult logs')
+        return db_item
 
     def get_item(self, kml_id):
         logger.debug('Get dynamodb item with primary key %s', kml_id)
@@ -106,26 +107,32 @@ class DynamoDBFilesHandler:
 
         return items[0]
 
-    def update_item(self, kml_id, file_length, timestamp, empty):
+    def update_item(self, kml_id, db_item, file_length, timestamp, empty, author_version=None):
         logger.debug('Updating dynamodb item with primary key %s', kml_id)
+        db_item['updated'] = timestamp
+        db_item['empty'] = empty
+        db_item['length'] = file_length
+        attribute_updates = {
+            'updated': {
+                'Value': timestamp, 'Action': 'PUT'
+            },
+            'empty': {
+                'Value': empty, 'Action': 'PUT'
+            },
+            'length': {
+                'Value': file_length, 'Action': 'PUT'
+            }
+        }
+        if author_version is not None:
+            attribute_updates['author_version'] = {'Value': author_version, 'Action': 'PUT'}
+            db_item['author_version'] = author_version
         try:
-            self.table.update_item(
-                Key={'kml_id': kml_id},
-                AttributeUpdates={
-                    'updated': {
-                        'Value': timestamp, 'Action': 'PUT'
-                    },
-                    'empty': {
-                        'Value': empty, 'Action': 'PUT'
-                    },
-                    'length': {
-                        'Value': file_length, 'Action': 'PUT'
-                    }
-                }
-            )
+            self.table.update_item(Key={'kml_id': kml_id}, AttributeUpdates=attribute_updates)
         except EndpointConnectionError as error:
             logger.exception('Failed to connect to DynamoDB: %s', error)
             abort(502, 'Backend DB connection error, please consult logs')
+
+        return db_item
 
     def delete_item(self, kml_id):
         logger.debug('Deleting dynamodb item with primary key %s', kml_id)
