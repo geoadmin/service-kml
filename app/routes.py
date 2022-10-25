@@ -92,7 +92,7 @@ def update_kml(kml_id):
     admin_id = validate_permissions(db_item)
 
     # Get the client version
-    client_version = request.form.get('client_version', DEFAULT_CLIENT_VERSION)
+    client_version = request.form.get('client_version', None)
 
     # Get the kml file data
     kml_string_gzip, empty = validate_kml_file()

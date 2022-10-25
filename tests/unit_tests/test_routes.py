@@ -9,7 +9,7 @@ from nose2.tools import params
 
 from flask import url_for
 
-from app.settings import AWS_DB_TABLE_NAME, DEFAULT_CLIENT_VERSION
+from app.settings import AWS_DB_TABLE_NAME
 from app.settings import KML_FILE_CONTENT_TYPE
 from app.version import APP_VERSION
 from tests.unit_tests.base import BaseRouteTestCase
@@ -43,7 +43,6 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
         self.assertKml(response, kml_file, with_admin_id=True)
-        self.assertEqual(response.json['client_version'], DEFAULT_CLIENT_VERSION)
 
     def test_valid_kml_post_author(self):
         kml_file = 'valid-kml.xml'
@@ -52,7 +51,6 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
         self.assertKml(response, kml_file, author='My author for unittest', with_admin_id=True)
-        self.assertEqual(response.json['client_version'], DEFAULT_CLIENT_VERSION)
 
     def test_valid_kml_post_client_version(self):
         kml_file = 'valid-kml.xml'
@@ -60,8 +58,7 @@ class TestPostEndpoint(BaseRouteTestCase):
         self.assertEqual(response.status_code, 201)
         self.assertCors(response, ['GET', 'HEAD', 'POST', 'OPTIONS'])
         self.assertEqual(response.content_type, "application/json")  # pylint: disable=no-member
-        self.assertKml(response, kml_file, with_admin_id=True)
-        self.assertEqual(response.json['client_version'], '1.0.0')
+        self.assertKml(response, kml_file, with_admin_id=True, client_version='1.0.0')
 
     def test_valid_gzipped_kml_post(self):
         kml_file = 'valid-kml.xml.gz'
@@ -169,7 +166,6 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
         self.assertKml(response, 'valid-kml.xml')
-        self.assertEqual(response.json['client_version'], '0.0.0')
 
     def test_get_metadata_client_version(self):
         sample_kml = self.create_test_kml('valid-kml.xml.gz', client_version='1.1.1').json
@@ -189,8 +185,7 @@ class TestGetEndpoint(BaseRouteTestCase):
         self.assertEqual(response.content_type, "application/json")
         self.assertEqual(stored_geoadmin_link, response.json['links']['kml'])
         self.assertEqual(stored_kml_admin_link, response.json['links']['self'])
-        self.assertKml(response, 'valid-kml.xml')
-        self.assertEqual(response.json['client_version'], '1.1.1')
+        self.assertKml(response, 'valid-kml.xml', client_version='1.1.1')
 
     def test_get_metadata_by_admin_id(self):
         admin_id = self.sample_kml['admin_id']
@@ -351,6 +346,39 @@ class TestPutEndpoint(BaseRouteTestCase):
             delta=timedelta(seconds=0.3)
         )
         self.assertKml(response, updated_file, with_admin_id=True)
+
+    def test_valid_kml_put_update_client_version(self):
+        updated_file = 'updated-kml.xml'
+        id_to_put = self.sample_kml['id']
+        response = self.app.put(
+            url_for('update_kml', kml_id=id_to_put),
+            data=prepare_kml_payload(
+                kml_file=updated_file, admin_id=self.sample_kml['admin_id'], client_version='1.1.1'
+            ),
+            content_type="multipart/form-data",
+            headers=self.origin_headers["allowed"]
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertCors(response, ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT'])
+        self.assertEqual(response.content_type, "application/json")
+        for key in self.sample_kml:
+            # values for "updated" should and may differ, so ignore them in
+            # this assertion
+            if key == 'client_version':
+                self.assertNotEqual(self.sample_kml[key], response.json[key])
+                self.assertEqual(response.json[key], '1.1.1')
+            elif key != "updated":
+                self.assertEqual(self.sample_kml[key], response.json[key])
+
+        updated_item = self.dynamodb.Table(AWS_DB_TABLE_NAME).get_item(Key={
+            'kml_id': id_to_put
+        }).get('Item', None)
+        self.assertAlmostEqual(
+            datetime.datetime.fromisoformat(updated_item["updated"]).replace(tzinfo=None),
+            datetime.datetime.utcnow(),
+            delta=timedelta(seconds=0.3)
+        )
+        self.assertKml(response, updated_file, with_admin_id=True, client_version='1.1.1')
 
     def test_valid_gzipped_kml_put(self):
         updated_file = 'updated-kml.xml.gz'
