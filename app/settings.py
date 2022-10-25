@@ -34,3 +34,5 @@ SCRIPT_NAME = os.getenv('SCRIPT_NAME', '')
 
 CACHE_CONTROL = os.getenv('CACHE_CONTROL', 'no-cache, no-store, must-revalidate')
 CACHE_CONTROL_4XX = os.getenv('CACHE_CONTROL_4XX', 'public, max-age=3600')
+
+DEFAULT_AUTHOR_VERSION = '0.0.0'

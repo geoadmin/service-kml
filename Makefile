@@ -145,6 +145,7 @@ serve: clean_logs $(LOGS_DIR)
 
 .PHONY: gunicornserve
 gunicornserve: clean_logs $(LOGS_DIR)
+	mkdir -p /tmp/gunicorn_workers
 	SCRIPT_NAME=$(ROUTE_PREFIX) ENV_FILE=$(ENV_FILE) LOGS_DIR=$(LOGS_DIR) $(PYTHON) wsgi.py
 
 

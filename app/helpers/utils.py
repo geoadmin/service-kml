@@ -16,7 +16,9 @@ from flask import abort
 from flask import jsonify
 from flask import make_response
 from flask import request
+from flask.helpers import url_for
 
+from app.settings import DEFAULT_AUTHOR_VERSION
 from app.settings import KML_FILE_CONTENT_TYPE
 from app.settings import KML_MAX_SIZE
 from app.settings import KML_STORAGE_HOST_URL
@@ -179,6 +181,13 @@ def validate_kml_file():
     return gzip_string(kml_string), empty
 
 
+def validate_author():
+    author = request.form.get('author', None)
+    if author is None:
+        abort(400, "Missing author field")
+    return author
+
+
 def get_kml_file_link(file_key):
     if KML_STORAGE_HOST_URL:
         return f'{KML_STORAGE_HOST_URL}/{file_key}'
@@ -228,3 +237,24 @@ def decompress_if_gzipped(file_content):
             logger.error("Error when trying to decompress kml file: %s", error)
             raise error
     return ret
+
+
+def get_json_metadata(db_item, with_admin_id=False):
+    '''Return a json metadata output of a DB entry'''
+    metadata = {
+        'id': db_item['kml_id'],
+        'success': True,
+        'created': db_item['created'],
+        'updated': db_item['updated'],
+        'empty': db_item['empty'],
+        'author': db_item['author'],
+        'author_version': db_item.get('author_version', DEFAULT_AUTHOR_VERSION),
+        'links':
+            {
+                'self': url_for('get_kml_metadata', kml_id=db_item['kml_id'], _external=True),
+                'kml': get_kml_file_link(db_item['file_key']),
+            }
+    }
+    if with_admin_id:
+        metadata['admin_id'] = db_item['admin_id']
+    return metadata
