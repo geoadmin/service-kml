@@ -44,7 +44,7 @@ See also [Git Flow - Versioning](https://github.com/geoadmin/doc-guidelines/blob
 
 ### Make Dependencies
 
-The **Make** targets assume you have **python3.7**, **pipenv**, **bash**, **curl**, **tar**, **docker** and **docker-compose** installed.
+The **Make** targets assume you have **python3.11**, **pipenv**, **bash**, **curl**, **tar**, **docker** and **docker-compose** installed.
 
 ### Setting up to work
 
@@ -131,7 +131,7 @@ Here some curl examples
 
 ```bash
 # post a kml
-curl -X POST http://localhost:5000/api/kml/admin -F kml="@./tests/samples/valid-kml.xml; type=application/vnd.google-earth.kml+xml" -H "Origin: map.geo.admin.ch"
+curl -X POST http://localhost:5000/api/kml/admin -F kml="@./tests/samples/valid-kml.xml; type=application/vnd.google-earth.kml+xml" -F author="test" -H "Origin: map.geo.admin.ch"
 
 # get the kml metadata
 curl http://localhost:5000/api/kml/admin/${KML_ID} -H "Origin: map.geo.admin.ch"
