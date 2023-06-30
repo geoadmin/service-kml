@@ -100,11 +100,11 @@ def prepare_kml_payload(
         with open(f'./tests/samples/{kml_file}', 'rb') as file:
             kml_data = file.read()
     if admin_id and kml_data:
-        data = dict(admin_id=admin_id, kml=(io.BytesIO(kml_data), 'kml.xml', content_type))
+        data = {'admin_id': admin_id, 'kml': (io.BytesIO(kml_data), 'kml.xml', content_type)}
     elif kml_data:
-        data = dict(kml=(io.BytesIO(kml_data), 'kml.xml', content_type))
+        data = {'kml': (io.BytesIO(kml_data), 'kml.xml', content_type)}
     elif admin_id:
-        data = dict(admin_id=admin_id)
+        data = {'admin_id': admin_id}
     else:
         raise ValueError('No admin_id and no kml_string given')
 

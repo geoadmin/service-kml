@@ -525,7 +525,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         response = self.app.delete(
             url_for('delete_kml', kml_id=id_to_delete),
             content_type='multipart/form-data',
-            data=dict(admin_id=self.sample_kml['admin_id']),
+            data={'admin_id': self.sample_kml['admin_id']},
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 200)
@@ -562,7 +562,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
 
         response = self.app.delete(
             url_for('delete_kml', kml_id=id_to_delete),
-            data=dict(admin_id=self.sample_kml['admin_id']),
+            data={'admin_id': self.sample_kml['admin_id']},
             content_type='multipart/form-data',
             headers=self.origin_headers["bad"]
         )
@@ -577,7 +577,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         response = self.app.delete(
             url_for('delete_kml', kml_id=id_to_delete),
             content_type='multipart/form-data',
-            data=dict(admin_id='invalid-id'),
+            data={'admin_id': 'invalid-id'},
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 403)
@@ -604,7 +604,7 @@ class TestDeleteEndpoint(BaseRouteTestCase):
         response = self.app.delete(
             url_for('delete_kml', kml_id=id_to_delete),
             content_type='application/json',
-            data=dict(admin_id=self.sample_kml['admin_id']),
+            data={'admin_id': self.sample_kml['admin_id']},
             headers=self.origin_headers["allowed"]
         )
         self.assertEqual(response.status_code, 415)
