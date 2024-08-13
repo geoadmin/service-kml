@@ -6,9 +6,8 @@ RUN groupadd -r geoadmin && useradd -u 1000 -r -s /bin/false -g geoadmin geoadmi
 RUN pip3 install pipenv \
     && pipenv --version
 
-COPY Pipfile* /tmp/
-RUN cd /tmp && \
-    pipenv install --system --deploy --ignore-pipfile
+COPY Pipfile.lock /tmp/
+RUN cd /tmp && pipenv sync
 
 WORKDIR /app
 COPY --chown=geoadmin:geoadmin ./ /app/
