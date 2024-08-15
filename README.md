@@ -44,7 +44,7 @@ See also [Git Flow - Versioning](https://github.com/geoadmin/doc-guidelines/blob
 
 ### Make Dependencies
 
-The **Make** targets assume you have **python3.11**, **pipenv**, **bash**, **curl**, **tar**, **docker** and **docker-compose** installed.
+The **Make** targets assume you have **python3.11**, **pipenv**, **bash**, **curl**, **tar**, **docker** and **docker-compose-plugin** installed.
 
 ### Setting up to work
 
@@ -75,7 +75,7 @@ The other services that are used (DynamoDB local and [MinIO](https://www.min.io)
 Starting DynamoDB local and MinIO is done with a simple
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 in the source root folder. Make sure to run `make dev` before to ensure the necessary folders `.volumes/*` are in place. These folders are mounted in the services and allow data persistency over restarts of the containers.
