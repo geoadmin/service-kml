@@ -9,7 +9,7 @@ from flask import jsonify
 from flask import make_response
 from flask import request
 
-from app import app
+from app.app import app
 from app.helpers.dynamodb import get_db
 from app.helpers.s3 import get_storage
 from app.helpers.utils import get_json_metadata
