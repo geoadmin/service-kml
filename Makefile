@@ -179,6 +179,7 @@ dockerrun: clean_logs dockerbuild $(LOGS_DIR)
 		--env-file=${PWD}/${ENV_FILE} \
 		--env LOGS_DIR=/logs \
 		--env SCRIPT_NAME=$(ROUTE_PREFIX) \
+		--env GUNICORN_WORKER_TMP_DIR= \
 		--mount type=bind,source="${LOGS_DIR}",target=/logs \
 		$(DOCKER_IMG_LOCAL_TAG)
 
