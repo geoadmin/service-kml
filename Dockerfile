@@ -1,16 +1,36 @@
-FROM python:3.11-slim-buster
-RUN groupadd -r geoadmin && useradd -u 1000 -r -s /bin/false -g geoadmin geoadmin
+FROM python:3.11-slim-buster AS base
 
+ENV USER=geoadmin
+ENV GROUP=geoadmin
+ENV INSTALL_DIR=/opt/service-kml
+ENV SRC_DIR=/usr/local/src/service-kml
+ENV PIPENV_VENV_IN_PROJECT=1
 
-# HERE : install relevant packages
+RUN groupadd -r ${GROUP} && useradd -r -s /bin/false -g ${GROUP} ${USER} \
+     && mkdir -p ${INSTALL_DIR}/app && chown ${USER}:${GROUP} ${INSTALL_DIR}/app
+
+###########################################################
+# Builder container
+FROM base AS builder
+
 RUN pip3 install pipenv \
-    && pipenv --version
+    && pipenv --version \
+    && mkdir -p ${SRC_DIR} && chown ${USER}:${GROUP} ${SRC_DIR}
 
-COPY Pipfile.lock /tmp/
-RUN cd /tmp && pipenv sync
+COPY Pipfile.lock ${SRC_DIR}
+RUN cd ${SRC_DIR} && pipenv sync
 
-WORKDIR /app
-COPY --chown=geoadmin:geoadmin ./ /app/
+COPY --chown=${USER}:${GROUP} app ${INSTALL_DIR}/app
+COPY --chown=${USER}:${GROUP} wsgi.py ${INSTALL_DIR}/
+
+###########################################################
+# Container to use in production
+FROM base AS production
+
+# Activate virtual environnment
+ENV VIRTUAL_ENV=${INSTALL_DIR}/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV PYTHONHOME=""
 
 ARG GIT_HASH=unknown
 ARG GIT_BRANCH=unknown
@@ -24,12 +44,17 @@ LABEL git.dirty="$GIT_DIRTY"
 LABEL version=$VERSION
 LABEL author=$AUTHOR
 
+# Install venv and app from builder stage
+COPY --from=builder ${SRC_DIR}/.venv/ ${INSTALL_DIR}/.venv/
+COPY --from=builder ${INSTALL_DIR}/ ${INSTALL_DIR}/
+
 # Overwrite the version.py from source with the actual version
-RUN echo "APP_VERSION = '$VERSION'" > /app/app/version.py
+RUN echo "APP_VERSION = '$VERSION'" > ${INSTALL_DIR}/app/version.py
 
-USER geoadmin
+WORKDIR ${INSTALL_DIR}
+USER ${USER}
 
-EXPOSE $HTTP_PORT
+EXPOSE ${HTTP_PORT}
 
 # Use a real WSGI server
 ENTRYPOINT ["python3", "wsgi.py"]
