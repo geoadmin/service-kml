@@ -64,10 +64,10 @@ source .env.local
 export ENV_FILE=.env.local
 ```
 
-Then, you can run the dev target to ensure you have everything needed to develop, test and serve locally
+Then, you can run the setup target to ensure you have everything needed to develop, test and serve locally
 
 ```bash
-make dev
+make setup
 ```
 
 The other services that are used (DynamoDB local and [MinIO](https://www.min.io) as local S3 replacement) are wrapped in a docker compose.
