@@ -2,8 +2,8 @@
 
 | Branch | Status |
 |--------|-----------|
-| develop | ![Build Status](https://codebuild.eu-central-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidDZJMHhkcHR5MGNRMmJkSDIzaW5JRUVxWXJtK0d4R25SWFplT3FjMlZNZDNSc21GQ3Ztd0NrbTJCQXhscVIzcU4xcVdEMHRaWDZ2YmZ0M1lseHgwVWJvPSIsIml2UGFyYW1ldGVyU3BlYyI6IjF0d3dwamZtZ2c0MkV0OUIiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop) |
-| master | ![Build Status](https://codebuild.eu-central-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoidDZJMHhkcHR5MGNRMmJkSDIzaW5JRUVxWXJtK0d4R25SWFplT3FjMlZNZDNSc21GQ3Ztd0NrbTJCQXhscVIzcU4xcVdEMHRaWDZ2YmZ0M1lseHgwVWJvPSIsIml2UGFyYW1ldGVyU3BlYyI6IjF0d3dwamZtZ2c0MkV0OUIiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master) |
+| develop | ![Build Status](https://codebuild.eu-central-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiZDh2Vmw5Q0lUYlduS0QzdTNyRTBrWDNjQURxenRwVXVnVkVkNDBHZ3orVy85ZmU3Mndqc1Z0L1lJb1hpczhmV3FyZ2JrUUQ3MlV0c1pmMDlzT2RPTm1BPSIsIml2UGFyYW1ldGVyU3BlYyI6ImZGNGV4dWJIUW1QTm0wUDQiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=develop) |
+| master | ![Build Status](https://codebuild.eu-central-1.amazonaws.com/badges?uuid=eyJlbmNyeXB0ZWREYXRhIjoiZDh2Vmw5Q0lUYlduS0QzdTNyRTBrWDNjQURxenRwVXVnVkVkNDBHZ3orVy85ZmU3Mndqc1Z0L1lJb1hpczhmV3FyZ2JrUUQ3MlV0c1pmMDlzT2RPTm1BPSIsIml2UGFyYW1ldGVyU3BlYyI6ImZGNGV4dWJIUW1QTm0wUDQiLCJtYXRlcmlhbFNldFNlcmlhbCI6MX0%3D&branch=master) |
 
 ## Table of content
 
@@ -44,7 +44,7 @@ See also [Git Flow - Versioning](https://github.com/geoadmin/doc-guidelines/blob
 
 ### Make Dependencies
 
-The **Make** targets assume you have **python3.11**, **pipenv**, **bash**, **curl**, **tar**, **docker** and **docker-compose** installed.
+The **Make** targets assume you have **python3.11**, **pipenv**, **bash**, **curl**, **tar**, **docker** and **docker-compose-plugin** installed.
 
 ### Setting up to work
 
@@ -64,10 +64,10 @@ source .env.local
 export ENV_FILE=.env.local
 ```
 
-Then, you can run the dev target to ensure you have everything needed to develop, test and serve locally
+Then, you can run the setup target to ensure you have everything needed to develop, test and serve locally
 
 ```bash
-make dev
+make setup
 ```
 
 The other services that are used (DynamoDB local and [MinIO](https://www.min.io) as local S3 replacement) are wrapped in a docker compose.
@@ -75,7 +75,7 @@ The other services that are used (DynamoDB local and [MinIO](https://www.min.io)
 Starting DynamoDB local and MinIO is done with a simple
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 in the source root folder. Make sure to run `make dev` before to ensure the necessary folders `.volumes/*` are in place. These folders are mounted in the services and allow data persistency over restarts of the containers.
@@ -161,7 +161,6 @@ Each image contains the following metadata:
 These metadata can be read with the following command
 
 ```bash
-# NOTE: Currently we don't have permission to do docker pull on AWS ECR
 make dockerlogin
 docker pull 974517877189.dkr.ecr.eu-central-1.amazonaws.com/service-kml:develop.latest
 

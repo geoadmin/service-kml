@@ -1,4 +1,3 @@
-version: "3.4"
 services:
   s3:
     image: minio/minio
@@ -25,7 +24,7 @@ services:
           sleep 1;
         done;
         echo minio server is up;
-        /usr/bin/mc alias set minio http://s3:9000 dummy-123 dummy-123;
+        /usr/bin/mc alias set minio http://s3:9000 dummy123 dummy123;
         /usr/bin/mc mb minio/test-bucket;
         /usr/bin/mc policy set public minio/test-bucket;
         exit 0;
@@ -77,6 +76,6 @@ services:
     links:
       - dynamodb-local
     environment:
-      - AWS_ACCESS_KEY_ID=dummy-123
-      - AWS_SECRET_ACCESS_KEY=dummy-123
+      - AWS_ACCESS_KEY_ID=dummy123
+      - AWS_SECRET_ACCESS_KEY=dummy123
       - AWS_DEFAULT_REGION=wonderland

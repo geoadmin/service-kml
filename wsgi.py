@@ -42,6 +42,7 @@ class StandaloneApplication(BaseApplication):  # pylint: disable=abstract-method
 # We use the port 5000 as default, otherwise we set the HTTP_PORT env variable within the container.
 if __name__ == '__main__':
     HTTP_PORT = str(os.environ.get('HTTP_PORT', "5000"))
+    worker_tmp_dir = os.getenv("GUNICORN_WORKER_TMP_DIR", "/tmp/gunicorn_workers")
     # Bind to 0.0.0.0 to let your app listen to all network interfaces.
     options = {
         'bind': f"0.0.0.0:{HTTP_PORT}",
@@ -50,7 +51,7 @@ if __name__ == '__main__':
         'timeout': 60,
         'logconfig_dict': get_logging_cfg(),
         'forwarded_allow_ips': os.getenv('FORWARED_ALLOW_IPS', '*'),
-        'worker_tmp_dir': os.getenv("GUNICORN_WORKER_TMP_DIR", "/tmp/gunicorn_workers"),
+        'worker_tmp_dir': worker_tmp_dir if worker_tmp_dir != '' else None,
         'secure_scheme_headers':
             {
                 os.getenv('FORWARDED_PROTO_HEADER_NAME', 'X-Forwarded-Proto').upper(): 'https'
