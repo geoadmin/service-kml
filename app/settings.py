@@ -32,6 +32,8 @@ ALLOWED_DOMAINS_PATTERN = f"({'|'.join(ALLOWED_DOMAINS)})"
 
 SCRIPT_NAME = os.getenv('SCRIPT_NAME', '')
 
+GUNICORN_KEEPALIVE = int(os.getenv('GUNICORN_KEEPALIVE', '2'))
+
 CACHE_CONTROL = os.getenv('CACHE_CONTROL', 'no-cache, no-store, must-revalidate')
 CACHE_CONTROL_4XX = os.getenv('CACHE_CONTROL_4XX', 'public, max-age=3600')
 

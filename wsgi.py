@@ -18,6 +18,7 @@ from gunicorn.app.base import BaseApplication
 
 from app import app as application
 from app.helpers.utils import get_logging_cfg
+from app.settings import GUNICORN_KEEPALIVE
 
 
 class StandaloneApplication(BaseApplication):  # pylint: disable=abstract-method
@@ -51,6 +52,7 @@ if __name__ == '__main__':
         'timeout': 60,
         'logconfig_dict': get_logging_cfg(),
         'forwarded_allow_ips': os.getenv('FORWARED_ALLOW_IPS', '*'),
+        'keepalive': GUNICORN_KEEPALIVE,
         'worker_tmp_dir': worker_tmp_dir if worker_tmp_dir != '' else None,
         'secure_scheme_headers':
             {
