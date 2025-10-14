@@ -216,3 +216,4 @@ The service is configured by Environment Variable:
 | CACHE_CONTROL | `no-cache, no-store, must-revalidate` | Cache Control header value of the GET endpoint(s) |
 | CACHE_CONTROL_4XX | `public, max-age=3600` | Cache Control header for 4XX responses |
 | GUNICORN_WORKER_TMP_DIR | `/tmp/gunicorn_workers` | Gunicorn worker tmp directory. :warning: This directory should be on **TMPFS** for better performance. |
+| GUNICORN_KEEPALIVE | `2` | The [`keepalive`](https://docs.gunicorn.org/en/stable/settings.html#keepalive) setting passed to gunicorn. |
